@@ -260,6 +260,7 @@ class Router {
 
 	/** GETTERS SPECIAL @return string|array|bool */
 	public function getAccessMode() { return $this->_REQUEST_METHOD; }
+	public function getHttpMode() { return $this->_REQUEST_SCHEME; }
 	public function getNoRewritedMatchedPath() { return $this->_sMatchedPath; }
 	public function getTranslateRouteParams() { return $this->_aTranslateRouteParams; }
 	public function isAjaxRequest() { return $this->_bAjaxDemand; }
