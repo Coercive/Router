@@ -140,9 +140,9 @@ Switch Language
     ]);
 
     // Now, when get the swithed path :
-        $oRouteur->switchLang('EN')
+    $oRouteur->switchLang('EN')
 
-            /* my-new-slug/article-789/@example */
+        /* my-new-slug/article-789/@example */
 
 #
 # You can reset overload params
