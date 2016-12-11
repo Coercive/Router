@@ -12,7 +12,7 @@ use \Exception;
  * (FR) La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @version		2.0.0
+ * @version		2.0.1
  * @package		Coercive\Utility\Router
  * @link		@link https://github.com/Coercive/Router
  *
