@@ -64,8 +64,11 @@ class Router {
 	/** @var array $_aParsedRouteParams */
 	private $_aParsedRouteParams = [];
 
-	/** @var array $_aTranslateRouteParams */
+	/** @var array Overload params for switch url lang */
 	private $_aTranslateRouteParams = [];
+
+	/** @var string Current Language set for switch url lang */
+	private $_sSwitchCurrentLang = '';
 
 	/** @var string $_sId */
 	private $_sId = null;
@@ -290,8 +293,10 @@ class Router {
 	 */
 	public function overloadParam($aTranslatedParam) {
 		if($aTranslatedParam && is_array($aTranslatedParam)) {
-			foreach($aTranslatedParam as $sIdParam => $sTranslatedValue) {
-				$this->_aTranslateRouteParams[$sIdParam] = urlencode($sTranslatedValue);
+			foreach($aTranslatedParam as $sLang => $aLangParams) {
+				foreach($aLangParams as $sIdParam => $sTranslatedValue) {
+					$this->_aTranslateRouteParams[$sLang][$sIdParam] = urlencode($sTranslatedValue);
+				}
 			}
 		}
 		return $this;
@@ -303,7 +308,8 @@ class Router {
 	 * @return Router
 	 */
 	public function resetOverload() {
-		$this->_aTranslateRouteParams = null;
+		$this->_sSwitchCurrentLang = '';
+		$this->_aTranslateRouteParams = [];
 		return $this;
 	}
 
@@ -318,6 +324,7 @@ class Router {
 
 		# REQUESTED URL
 		if(empty($this->_aRoutes[$this->_sId][$sLang])) return '';
+		$this->_sSwitchCurrentLang = $sLang;
 		$sUrl = $this->_clean($this->_aRoutes[$this->_sId][$sLang]);
 
 		# PARAM GET
@@ -503,8 +510,10 @@ class Router {
 			if ($aInjectedParams && isset($aInjectedParams[$aParam['name']])) {
 				$sValue = $aInjectedParams[$aParam['name']];
 			}
-			elseif (!$aInjectedParams && isset($this->_aTranslateRouteParams[$aParam['name']])) {
-				$sValue = $this->_aTranslateRouteParams[$aParam['name']];
+			elseif (!$aInjectedParams && $this->_sSwitchCurrentLang
+				&& isset($this->_aTranslateRouteParams[$this->_sSwitchCurrentLang])
+				&& isset($this->_aTranslateRouteParams[$this->_sSwitchCurrentLang][$aParam['name']])) {
+				$sValue = $this->_aTranslateRouteParams[$this->_sSwitchCurrentLang][$aParam['name']];
 			}
 			elseif (!$aInjectedParams && isset($this->_aRouteParamsGet[$aParam['name']])) {
 				$sValue = $this->_aRouteParamsGet[$aParam['name']];

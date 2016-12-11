@@ -135,14 +135,38 @@ Switch Language
 #
     // Create a new slug and add the optional test var (blog route)
     $oRouteur->overloadParam([
-        'slug' => 'my-new-slug',
-        'test' => '@example'
+        'EN' => [
+            'slug' => 'my-new-slug',
+            'test' => '@example'
+        ]
     ]);
+
+    // You can prepare all data in one place
+    $oRouteur->overloadParam([
+        'EN' => [...],
+        'FR' => [...],
+        'RU' => [...]
+    ]);
+
+    // OR separately in multi places
+    $oRouteur->overloadParam([
+        'EN' => [...]
+    ]);
+    # ... some code
+    $oRouteur->overloadParam([
+        'FR' => [...]
+    ]);
+    # ... some code
+    $oRouteur->overloadParam([
+        'RU' => [...]
+    ]);
+    # ... some code
 
     // Now, when get the swithed path :
     $oRouteur->switchLang('EN')
 
         /* my-new-slug/article-789/@example */
+
 
 #
 # You can reset overload params
