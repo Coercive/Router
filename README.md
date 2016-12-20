@@ -68,10 +68,14 @@ Basic Functions
 #
     // Get ID : (example : INDEX)
     $oRouteur->getId() 
-	
+
     // Get LANG : (example : EN)
     $oRouteur->getLang()
-	
+
+    // Force LANG : (example : EN)
+    // If your process requires it, you can change the internal language
+    $oRouteur->forceLang('EN')
+
     // Get Controller : (example : Projet\Controller::Method)
     $oRouteur->getController()
 
