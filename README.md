@@ -43,6 +43,17 @@ COMPLEX:
     __: Projet\Controller::Method
     FR: chiffre-{id:[0-9]{2}}/nom-{name}/mechant-{script}
     EN: number-{id:[0-9]{2}}/name-{name}/bad-{script}
+
+###########################
+
+# Multi optional inner same brackets !
+# {date} integer (optional)
+# {slug} can be all exept / (optional too)
+
+COMPLEX:
+    __: Projet\Controller::Method
+    FR: fr/multi-optional[/{date:\d+}-{slug}]
+    EN: en/multi-optional[/{date:\d+}-{slug}]
 ```
 The "__" (double underscore) is what the router return when the route match.
 You can set what information you want, basicaly the item to load.

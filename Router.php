@@ -28,7 +28,8 @@ class Router {
 	# REGEX
 	const DEFAULT_MATCH_REGEX = '[^/]+';
 	const REGEX_PATH = '`\{([a-z_][a-z0-9_-]*)(?::([^{}]*(?:\{(?-1)\}[^{}]*)*))?\}`i';
-	const REGEX_OPTION = '`\[(.*(#([0-9]+)#).*)\]`i';
+	const REGEX_OPTION = '`\[(.*#[0-9]+#.*)?\]`i';
+	const REGEX_OPTION_NUMBER = '`#([0-9]+)#`i';
 
 	/** @var string INPUT_SERVER */
 	private $_REQUEST_SCHEME,
@@ -493,9 +494,22 @@ class Router {
 		}
 
 		if(preg_match_all(self::REGEX_OPTION, $sPath, $aMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
+
 			foreach ($aMatches as $aMatche) {
-				$this->_aParsedRouteParams[$aMatche[3][0]]['optional'] = str_replace('#'.$aMatche[3][0].'#', $this->_aParsedRouteParams[$aMatche[3][0]]['subject'], $aMatche[0][0]);
+
+				preg_match_all(self::REGEX_OPTION_NUMBER, $aMatche[1][0], $aSubMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+
+				$sRecurseReplace = $aMatche[0][0];
+				foreach ($aSubMatches as $aSubMatche) {
+					$sRecurseReplace = str_replace($aSubMatche[0][0], $this->_aParsedRouteParams[$aSubMatche[1][0]]['subject'], $sRecurseReplace);
+				}
+
+				foreach ($aSubMatches as $aSubMatche) {
+					$this->_aParsedRouteParams[$aSubMatche[1][0]]['optional'] = $sRecurseReplace;
+				}
+
 			}
+
 		}
 
 		$sPath = preg_replace(self::REGEX_OPTION, '(?:$1)?', $sPath);
