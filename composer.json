@@ -13,8 +13,8 @@
     ],
     "require": {
         "php": ">=7",
-        "symfony/yaml": "~2.7.5",
-        "coercive/globals": "1.*"
+        "symfony/yaml": "^2.",
+        "coercive/globals": "^1."
     },
     "require-dev": {},
     "autoload": {
