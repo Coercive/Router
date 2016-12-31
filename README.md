@@ -213,6 +213,9 @@ $oRouteur->url('HOME', 'EN') // EN language
 # example-fabric-url/article-100
 $oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100])
 
+# Full scheme autodetect (true) or manually set
+$oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, true)
+
 # http://www.my-web-site.com/example-fabric-url/article-100
 $oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'http')
 
