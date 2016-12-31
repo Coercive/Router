@@ -65,10 +65,10 @@ Load
 use Coercive\Utility\Router\Router;
 
 # Load one routes file
-$oRouteur = new Router('/path/routes.yml');
+$oRouter = new Router('/path/routes.yml');
 
 # OR multi-files
-$oRouteur = new Router(['/path/first_routes.yml', '/path/second_routes.yml', ...]);
+$oRouter = new Router(['/path/first_routes.yml', '/path/second_routes.yml', ...]);
 ```
 
 Basic Functions
@@ -78,50 +78,58 @@ Basic Functions
 # Important
 #
     // Get ID : (example : INDEX)
-    $oRouteur->getId() 
+    $oRouter->getId()
+    
+    // Get HOST : (example : www.my-website.test)
+    $oRouter->getHost()
+
+    // Force HOST : (example : www.my-new-domaine-name.test)
+    // If your process requires it, you can change the host name
+    // Useful for url builder
+    $oRouter->forceHost('www.my-new-domaine-name.test')
 
     // Get LANG : (example : EN)
-    $oRouteur->getLang()
+    $oRouter->getLang()
 
     // Force LANG : (example : EN)
     // If your process requires it, you can change the internal language
-    $oRouteur->forceLang('EN')
+    $oRouter->forceLang('EN')
 
     // Get Controller : (example : Projet\Controller::Method)
-    $oRouteur->getController()
+    $oRouter->getController()
 
 #
 # Util methods :
 #
     // Get Access Mode : (example : GET, POST ...)
-    $oRouteur->getAccessMode()
+    $oRouter->getAccessMode()
 
     // Get HTTP Mode : (http / https)
-    $oRouteur->getHttpMode()
+    $oRouter->getHttpMode()
 
     // Get the current matched path : (example : /{slug}/article-{nb:[0-9]{3}}[/{test:@[a-z]+}])
-    $oRouteur->getNoRewritedMatchedPath()
+    $oRouter->getNoRewritedMatchedPath()
 
     // Detect ajax request
-    $oRouteur->isAjaxRequest()
+    $oRouter->isAjaxRequest()
 	
     // Manually set ajax request
-    $oRouteur->setAjaxRequest(true|false)
+    $oRouter->setAjaxRequest(true|false)
 
     // Get what data accepted : (example : json, xml ...)
-    $oRouteur->getHttpAccept()
+    $oRouter->getHttpAccept()
 
     // Detect offical bot (basic list : bot|google|googlebot|spider|yahoo)
-    $oRouteur->isOfficialBot()
+    $oRouter->isOfficialBot()
 
     // Get current url
-    $oRouteur->getCurrentURL()
+    $oRouter->getCurrentURL()
 
     // Get server doc_root
-    $oRouteur->getServerRootPath()
+    $oRouter->getServerRootPath()
 
     // Get the translated route params (array)
-    $oRouteur->getTranslateRouteParams()
+    $oRouter->getTranslateRouteParams()
 ```
 Some new functions will be added soon, like a better custom bot detection etc...
 
@@ -135,12 +143,12 @@ Switch Language
     # /{slug}/article-{nb:[0-9]{3}}[/{test:@[a-z]+}]
 
     // Get basic current url path for FR language
-    $oRouteur->switchLang('FR')
+    $oRouter->switchLang('FR')
 
         /* blog-title/article-789 */
 
     // Same with the full path option
-    $oRouteur->switchLang('FR', true)
+    $oRouter->switchLang('FR', true)
 
         /* http://www.my-web-site.example/blog-title/article-789 */
 
@@ -149,7 +157,7 @@ Switch Language
 # OVERLOAD CURRENT URLPATH DATA
 #
     // Create a new slug and add the optional test var (blog route)
-    $oRouteur->overloadParam([
+    $oRouter->overloadParam([
         'EN' => [
             'slug' => 'my-new-slug',
             'test' => '@example'
@@ -157,28 +165,28 @@ Switch Language
     ]);
 
     // You can prepare all data in one place
-    $oRouteur->overloadParam([
+    $oRouter->overloadParam([
         'EN' => [...],
         'FR' => [...],
         'RU' => [...]
     ]);
 
     // OR separately in multi places
-    $oRouteur->overloadParam([
+    $oRouter->overloadParam([
         'EN' => [...]
     ]);
     # ... some code
-    $oRouteur->overloadParam([
+    $oRouter->overloadParam([
         'FR' => [...]
     ]);
     # ... some code
-    $oRouteur->overloadParam([
+    $oRouter->overloadParam([
         'RU' => [...]
     ]);
     # ... some code
 
     // Now, when get the swithed path :
-    $oRouteur->switchLang('EN')
+    $oRouter->switchLang('EN')
 
         /* my-new-slug/article-789/@example */
 
@@ -186,10 +194,10 @@ Switch Language
 #
 # You can reset overload params
 #
-    $oRouteur->resetOverload();
+    $oRouter->resetOverload();
 
     // Now, when get the swithed path, it returns the original params
-    $oRouteur->switchLang('EN')
+    $oRouter->switchLang('EN')
 
         /* blog-title/article-789 */
 
@@ -201,9 +209,9 @@ Build URL
 #
 # BASIC ROUTE
 #
-$oRouteur->url('HOME') // current language
-$oRouteur->url('HOME', null) // current language
-$oRouteur->url('HOME', 'EN') // EN language
+$oRouter->url('HOME') // current language
+$oRouter->url('HOME', null) // current language
+$oRouter->url('HOME', 'EN') // EN language
 
 #
 # For the next examples, i use the blog route
@@ -211,17 +219,17 @@ $oRouteur->url('HOME', 'EN') // EN language
 #
 
 # example-fabric-url/article-100
-$oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100])
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100])
 
 # Full scheme autodetect (true) or manually set
-$oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, true)
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, true)
 
 # http://www.my-web-site.com/example-fabric-url/article-100
-$oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'http')
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'http')
 
 # https://www.my-web-site.com/example-fabric-url/article-100
-$oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'https')
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'https')
 
 # example-fabric-url/article-100?param1=test1&param2=test2
-$oRouteur->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], ['param1'=>'test1', 'param2'=>'test2'])
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], ['param1'=>'test1', 'param2'=>'test2'])
 ```
