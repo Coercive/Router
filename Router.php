@@ -12,7 +12,7 @@ use \Exception;
  * (FR) La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @version		2.1.0
+ * @version		2.1.1
  * @package		Coercive\Utility\Router
  * @link		@link https://github.com/Coercive/Router
  *
@@ -27,9 +27,10 @@ class Router {
 
 	# REGEX
 	const DEFAULT_MATCH_REGEX = '[^/]+';
-	const REGEX_PATH = '`\{([a-z_][a-z0-9_-]*)(?::([^{}]*(?:\{(?-1)\}[^{}]*)*))?\}`i';
-	const REGEX_OPTION = '`\[(.*#[0-9]+#.*)?\]`i';
-	const REGEX_OPTION_NUMBER = '`#([0-9]+)#`i';
+	const REGEX_PARAM = '`\{([a-z_][a-z0-9_-]*)(?::([^{}]*(?:\{(?-1)\}[^{}]*)*))?\}`i';
+	const REGEX_OPTION = '`\[(.*#[0-9]+#.*)?\]`';
+	const REGEX_OPTION_NUMBER = '`#([0-9]+)#`';
+	const REGEX_LOST_OPTION = '`\[[^\]]*\]`';
 
 	/** @var string INPUT_SERVER */
 	private $_REQUEST_SCHEME,
@@ -346,6 +347,9 @@ class Router {
 			$sUrl = $this->_rewriteUrlParams($sUrl);
 		}
 
+		# DELETE LOST PARAMS
+		$sUrl = $this->_deleteLostParams($sUrl);
+
 		# RECOMPOSED URL
 		$sUrl = $sParamGet ? "$sUrl?$sParamGet" : $sUrl;
 		$sUrl = trim($sUrl, '/-');
@@ -359,10 +363,10 @@ class Router {
 	 * @param string $sLang [optional]
 	 * @param array $aRewriteParam [optional]
 	 * @param array $aGetParam [optional]
-	 * @param string $sFullUrlSheme [optional] (http, https)
+	 * @param mixed $mFullUrlSheme [optional] (http, https)
 	 * @return string
 	 */
-	public function url($sId, $sLang = '', $aRewriteParam = [], $aGetParam = [], $sFullUrlSheme = '') {
+	public function url($sId, $sLang = '', $aRewriteParam = [], $aGetParam = [], $mFullUrlSheme = '') {
 
 		# AUTO LANG
 		if(!$sLang) { $sLang = $this->_sLang; }
@@ -379,10 +383,23 @@ class Router {
 			$sUrl = $this->_rewriteUrlParams($sUrl, $aRewriteParam);
 		}
 
+		# FULL SCHEME
+		if($mFullUrlSheme) {
+			switch ($mFullUrlSheme) {
+				case $mFullUrlSheme === true:
+					$mFullUrlSheme = $this->getHttpMode();
+					break;
+			}
+			$mFullUrlSheme = "$mFullUrlSheme://{$this->_HTTP_HOST}/";
+		}
+
+		# DELETE LOST PARAMS
+		$sUrl = $this->_deleteLostParams($sUrl);
+
 		# RECOMPOSED URL
 		$sUrl = $sParamGet ? "$sUrl?$sParamGet" : $sUrl;
 		$sUrl = trim($sUrl, '/-');
-		return $sFullUrlSheme ? "$sFullUrlSheme://{$this->_HTTP_HOST}/$sUrl" : $sUrl;
+		return $mFullUrlSheme . $sUrl;
 	}
 
 	/**
@@ -462,7 +479,7 @@ class Router {
 
 		$aRouteParams = [];
 
-		if(!preg_match_all(self::REGEX_PATH, $sPath, $aMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
+		if(!preg_match_all(self::REGEX_PARAM, $sPath, $aMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
 			return $aRouteParams;
 		}
 
@@ -513,7 +530,6 @@ class Router {
 		}
 
 		$sPath = preg_replace(self::REGEX_OPTION, '(?:$1)?', $sPath);
-
 		foreach ($this->_aParsedRouteParams as $iKey => $aParam) {
 			$sPath = str_replace("#$iKey#", "(?P<$aParam[name]>$aParam[regex])", $sPath);
 		}
@@ -563,6 +579,16 @@ class Router {
 
 		return $sUrl;
 
+	}
+
+	/**
+	 * DELETE LOST URL PARAMS
+	 *
+	 * @param string $sUrl
+	 * @return string
+	 */
+	private function _deleteLostParams($sUrl) {
+		return (string) preg_replace(self::REGEX_LOST_OPTION, '', preg_replace(self::REGEX_PARAM, '', $sUrl));
 	}
 
 }
