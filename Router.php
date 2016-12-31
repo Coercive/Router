@@ -12,7 +12,7 @@ use \Exception;
  * (FR) La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @version		2.1.1
+ * @version		2.1.2
  * @package		Coercive\Utility\Router
  * @link		@link https://github.com/Coercive/Router
  *
@@ -264,6 +264,7 @@ class Router {
 	public function getController() { return $this->_sController; }
 
 	/** GETTERS SPECIAL @return string|array|bool */
+	public function getHost() { return $this->_HTTP_HOST; }
 	public function getAccessMode() { return $this->_REQUEST_METHOD; }
 	public function getHttpMode() { return $this->_REQUEST_SCHEME; }
 	public function getNoRewritedMatchedPath() { return $this->_sMatchedPath; }
@@ -274,6 +275,16 @@ class Router {
 	public function isOfficialBot() { return $this->_bIsOfficalBot; }
 	public function getCurrentURL() { return $this->_REQUEST_URI; }
 	public function getServerRootPath() { return $this->_DOCUMENT_ROOT; }
+
+	/**
+	 * FORCE HOST
+	 *
+	 * @param string $sHost
+	 * @return void
+	 */
+	public function forceHost($sHost) {
+		$this->_HTTP_HOST = $sHost;
+	}
 
 	/**
 	 * FORCE LANGUAGE
