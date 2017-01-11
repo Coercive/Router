@@ -1,9 +1,9 @@
 <?php
 namespace Coercive\Utility\Router;
 
-use \Coercive\Utility\Globals\Globals;
-use \Symfony\Component\Yaml\Parser;
-use \Exception;
+use Coercive\Utility\Globals\Globals;
+use Symfony\Component\Yaml\Parser;
+use Exception;
 
 /**
  * Router
@@ -12,7 +12,7 @@ use \Exception;
  * (FR) La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @version		2.1.2
+ * @version		2.1.3
  * @package		Coercive\Utility\Router
  * @link		@link https://github.com/Coercive/Router
  *
@@ -56,6 +56,9 @@ class Router {
 
 	/** @var string $_sMatchedPath */
 	private $_sMatchedPath = null;
+
+	/** @var string $_sCurrentPreparedRoot */
+	private $_sCurrentPreparedRoot = '';
 
 	/** @var array $aParamsGet */
 	private $_aParamsGet = [];
@@ -355,7 +358,7 @@ class Router {
 
 		# REWRITE PARAM GET
 		if($this->_aParsedRouteParams) {
-			$sUrl = $this->_rewriteUrlParams($sUrl);
+			$sUrl = $this->_rewriteUrlParams($sUrl, $this->_aParsedRouteParams, true);
 		}
 
 		# DELETE LOST PARAMS
@@ -391,6 +394,7 @@ class Router {
 
 		# REWRITE PARAM
 		if($aRewriteParam && is_array($aRewriteParam)) {
+			$aRewriteParam = $this->_prepareInjectedParams($sUrl, $aRewriteParam);
 			$sUrl = $this->_rewriteUrlParams($sUrl, $aRewriteParam);
 		}
 
@@ -502,6 +506,30 @@ class Router {
 			];
 		}
 
+		foreach ($aRouteParams as $iKey => $aParam) {
+			$sPath = str_replace($aParam['subject'], "#$iKey#", $sPath);
+		}
+		$this->_sCurrentPreparedRoot = $sPath;
+
+		if(preg_match_all(self::REGEX_OPTION, $this->_sCurrentPreparedRoot, $aMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
+
+			foreach ($aMatches as $aMatche) {
+
+				preg_match_all(self::REGEX_OPTION_NUMBER, $aMatche[1][0], $aSubMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+
+				$sRecurseReplace = $aMatche[0][0];
+				foreach ($aSubMatches as $aSubMatche) {
+					$sRecurseReplace = str_replace($aSubMatche[0][0], $aRouteParams[$aSubMatche[1][0]]['subject'], $sRecurseReplace);
+				}
+
+				foreach ($aSubMatches as $aSubMatche) {
+					$aRouteParams[$aSubMatche[1][0]]['optional'] = $sRecurseReplace;
+				}
+
+			}
+
+		}
+
 		return $aRouteParams;
 	}
 
@@ -517,30 +545,7 @@ class Router {
 			return (string) $sPath;
 		}
 
-		foreach ($this->_aParsedRouteParams as $iKey => $aParam) {
-			$sPath = str_replace($aParam['subject'], "#$iKey#", $sPath);
-		}
-
-		if(preg_match_all(self::REGEX_OPTION, $sPath, $aMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
-
-			foreach ($aMatches as $aMatche) {
-
-				preg_match_all(self::REGEX_OPTION_NUMBER, $aMatche[1][0], $aSubMatches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
-
-				$sRecurseReplace = $aMatche[0][0];
-				foreach ($aSubMatches as $aSubMatche) {
-					$sRecurseReplace = str_replace($aSubMatche[0][0], $this->_aParsedRouteParams[$aSubMatche[1][0]]['subject'], $sRecurseReplace);
-				}
-
-				foreach ($aSubMatches as $aSubMatche) {
-					$this->_aParsedRouteParams[$aSubMatche[1][0]]['optional'] = $sRecurseReplace;
-				}
-
-			}
-
-		}
-
-		$sPath = preg_replace(self::REGEX_OPTION, '(?:$1)?', $sPath);
+		$sPath = preg_replace(self::REGEX_OPTION, '(?:$1)?', $this->_sCurrentPreparedRoot);
 		foreach ($this->_aParsedRouteParams as $iKey => $aParam) {
 			$sPath = str_replace("#$iKey#", "(?P<$aParam[name]>$aParam[regex])", $sPath);
 		}
@@ -552,22 +557,23 @@ class Router {
 	 * REWRITE URL WITH PARAMS
 	 *
 	 * @param string $sUrl
-	 * @param array $aInjectedParams [optional]
+	 * @param array $aParams
+	 * @param bool $bSwitch [optional]
 	 * @return string
 	 */
-	private function _rewriteUrlParams($sUrl, $aInjectedParams = []) {
+	private function _rewriteUrlParams($sUrl, $aParams, $bSwitch = false) {
 
-		foreach ($this->_aParsedRouteParams as $iKey => $aParam) {
-			if ($aInjectedParams && isset($aInjectedParams[$aParam['name']])) {
-				$sValue = $aInjectedParams[$aParam['name']];
-			}
-			elseif (!$aInjectedParams && $this->_sSwitchCurrentLang
+		foreach ($aParams as $iKey => $aParam) {
+			if ($bSwitch && $this->_sSwitchCurrentLang
 				&& isset($this->_aTranslateRouteParams[$this->_sSwitchCurrentLang])
 				&& isset($this->_aTranslateRouteParams[$this->_sSwitchCurrentLang][$aParam['name']])) {
 				$sValue = $this->_aTranslateRouteParams[$this->_sSwitchCurrentLang][$aParam['name']];
 			}
-			elseif (!$aInjectedParams && isset($this->_aRouteParamsGet[$aParam['name']])) {
+			elseif ($bSwitch && isset($this->_aRouteParamsGet[$aParam['name']])) {
 				$sValue = $this->_aRouteParamsGet[$aParam['name']];
+			}
+			elseif (!$bSwitch && !empty($aParam['value'])) {
+				$sValue = $aParam['value'];
 			}
 			elseif(!empty($aParam['optional'])) {
 				$sUrl = str_replace($aParam['optional'], '', $sUrl);
@@ -600,6 +606,31 @@ class Router {
 	 */
 	private function _deleteLostParams($sUrl) {
 		return (string) preg_replace(self::REGEX_LOST_OPTION, '', preg_replace(self::REGEX_PARAM, '', $sUrl));
+	}
+
+	/**
+	 * PREPARE INJECT PARAM FOR URL BUILDER
+	 *
+	 * @param string $sUrl
+	 * @param array $aInjectedParams
+	 * @return array
+	 */
+	private function _prepareInjectedParams($sUrl, $aInjectedParams) {
+
+		$aParams = $this->_parseRouteParams($sUrl);
+		foreach ($aParams as $iKey => $aParam) {
+			if(!isset($aInjectedParams[$aParam['name']]) && empty($aParam['optional'])) {
+				self::_exception('Router cant create url. Param missing : ' . $aParam['name'], __LINE__, __METHOD__);
+			}
+			elseif(!isset($aInjectedParams[$aParam['name']]) && $aParam['optional']) {
+				$aParams[$iKey]['value'] = '';
+				continue;
+			}
+			$aParams[$iKey]['value'] = $aInjectedParams[$aParam['name']];
+		}
+
+		return $aParams;
+
 	}
 
 }
