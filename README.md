@@ -50,7 +50,7 @@ COMPLEX:
 # {date} integer (optional)
 # {slug} can be all exept / (optional too)
 
-COMPLEX:
+MULTI:
     __: Projet\Controller::Method
     FR: fr/multi-optional[/{date:\d+}-{slug}]
     EN: en/multi-optional[/{date:\d+}-{slug}]
@@ -62,13 +62,60 @@ In this example the router return a namespace / controller / method to launch.
 Load
 ----
 ```php
-use Coercive\Utility\Router\Router;
+use Coercive\Utility\Router\Loader;
+
+# YAML
 
 # Load one routes file
-$oRouter = new Router('/path/routes.yml');
-
+$oRouter = Loader::loadByYaml('/path/routes.yml')
 # OR multi-files
-$oRouter = new Router(['/path/first_routes.yml', '/path/second_routes.yml', ...]);
+$oRouter = Loader::loadByYaml(['/path/first_routes.yml', '/path/second_routes.yml', ...])
+
+# JSON
+
+# Load one routes file
+$oRouter = Loader::loadByJson('/path/routes.json')
+# OR multi-files
+$oRouter = Loader::loadByJson(['/path/first_routes.json', '/path/second_routes.json', ...])
+
+# ARRAY
+
+# Load routes array
+$oRouter = Loader::loadByArray([
+    INDEX => [
+        '__' => 'Projet\Controller::Method',
+        'FR' => '/',
+        'EN' => '/'
+    ],
+    HOME => [
+            '__' => 'Projet\Controller::Method',
+            'FR' => 'accueil',
+            'EN' => 'home'
+    ],
+    [ ... ]
+])
+
+# CACHE
+
+# You can cache the prepared routes and re-inject them after
+# For example, you have cache in var $oCache
+
+if( $oCache->isCacheReady() ) {
+    # YES
+    # Load by cache
+    $aArray = $oCache->get()
+    $oRouter = Loader::loadByCache( $aArray )
+}
+else {
+    # NO
+    # Classical Load
+    $oRouter = Loader::loadByYaml( '/path/routes.yml' )
+}
+
+# /!\ Important
+# On a previous page you have cached the prepared routes
+$oCache->set( $oRouter->getPreparedRoutesForCache() )
+
 ```
 
 Basic Functions
@@ -119,9 +166,6 @@ Basic Functions
     // Get what data accepted : (example : json, xml ...)
     $oRouter->getHttpAccept()
 
-    // Detect offical bot (basic list : bot|google|googlebot|spider|yahoo)
-    $oRouter->isOfficialBot()
-
     // Get current url
     $oRouter->getCurrentURL()
 
@@ -131,7 +175,6 @@ Basic Functions
     // Get the translated route params (array)
     $oRouter->getTranslateRouteParams()
 ```
-Some new functions will be added soon, like a better custom bot detection etc...
 
 Switch Language
 ---------------
