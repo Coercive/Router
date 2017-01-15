@@ -13,12 +13,12 @@
     ],
     "require": {
         "php": ">=7",
-        "symfony/yaml": "^2.",
-        "coercive/globals": "^1."
+        "symfony/yaml": "^2",
+        "coercive/globals": "^1"
     },
     "require-dev": {},
     "autoload": {
-        "psr-4": { "Coercive\\Utility\\Router\\": "" }
+        "psr-4": { "Coercive\\Utility\\Router\\": "lib/" }
     },
     "minimum-stability" : "dev",
     "extra": {
