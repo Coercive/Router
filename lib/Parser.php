@@ -1,8 +1,6 @@
 <?php
 namespace Coercive\Utility\Router;
 
-use Coercive\Utility\Router\Exception\ParserException;
-
 /**
  * Parser
  *
@@ -24,6 +22,9 @@ class Parser {
     const REGEX_OPTION = '`\[(.*#[0-9]+#.*)?\]`';
     const REGEX_OPTION_NUMBER = '`#([0-9]+)#`';
     const REGEX_LOST_OPTION = '`\[[^\]]*\]`';
+
+    /** @var string Additional path between the route and the domain or ip */
+    private $_sBasePath = '';
 
     /** @var array External Source Routes */
     private $_aSource = [];
@@ -60,6 +61,18 @@ class Parser {
      */
     public function deleteLostParams($sUrl) {
         return (string) preg_replace(self::REGEX_LOST_OPTION, '', preg_replace(self::REGEX_PARAM, '', $sUrl));
+    }
+
+    /**
+     * SETTER BASE PATH
+     * Additional path between the route and the domain or ip
+     *
+     * @param string $sBasePapth
+     * @return Parser
+     */
+    public function setBasePath($sBasePapth) {
+        $this->_sBasePath = $sBasePapth;
+        return $this;
     }
 
     /**
@@ -116,6 +129,9 @@ class Parser {
         # SKIP ON ERROR
         if(!$this->_aSource) { throw new ParserException('Parser cant start. No routes avialable.'); }
 
+        # BASE PATH
+        $sBasePath = $this->clean($this->_sBasePath);
+
         # PREPARE EACH ROUTE
         foreach($this->_aSource as $sId => $aRoutes) {
 
@@ -136,6 +152,7 @@ class Parser {
 
                 # CLEAN
                 $sPath = $this->clean($sRoute);
+                $sPath = $sPath ? $sBasePath . '/' . $sPath : $sBasePath;
 
                 # PREPARE PROPERTIES
                 $this->_aRoutes[$sId]['langs'][] = $sLang;
