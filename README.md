@@ -116,6 +116,14 @@ else {
 # On a previous page you have cached the prepared routes
 $oCache->set( $oRouter->getPreparedRoutesForCache() )
 
+# The second param in loader allow you to set a basepath before your routes
+# You can now use the router in local mode or ip with subdirectories before
+# Example : 000.000.00.00/folder/subfolder/my-custom-route/my-param
+$oRouter = Loader::loadByArray([...], '/folder/subfolder')
+
+# If you don't use the loader :
+$oParser->setBasePath('/folder/subfolder')
+
 ```
 
 Basic Functions
