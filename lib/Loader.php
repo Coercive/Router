@@ -2,7 +2,6 @@
 namespace Coercive\Utility\Router;
 
 use Symfony\Component\Yaml\Parser as YamlParser;
-use Coercive\Utility\Router\Exception\LoaderException;
 
 /**
  * Loader
@@ -38,10 +37,11 @@ class Loader {
      * ARRAY
      *
      * @param array $aRoutes
+     * @param string $sBasePath [optional]
      * @return Router
      * @throws LoaderException
      */
-    static public function loadByArray($aRoutes) {
+    static public function loadByArray($aRoutes, $sBasePath = '') {
 
         # SKIP ON ERROR
         if(!$aRoutes || !is_array($aRoutes)) { throw new LoaderException('Routes empty or not array'); }
@@ -49,6 +49,7 @@ class Loader {
         # LOAD ROUTER
         $oParser = new Parser;
         $oParser->addRoutes($aRoutes);
+        $oParser->setBasePath($sBasePath);
         return new Router($oParser);
     }
 
@@ -56,10 +57,11 @@ class Loader {
      * YAML FILES
      *
      * @param mixed $mYamlFilePathList List of files paths
+     * @param string $sBasePath [optional]
      * @return Router
      * @throws LoaderException
      */
-    static public function loadByYaml($mYamlFilePathList) {
+    static public function loadByYaml($mYamlFilePathList, $sBasePath = '') {
 
         # SKIP ON ERROR
         if(!$mYamlFilePathList) { throw new LoaderException('No Yaml files found'); }
@@ -84,7 +86,7 @@ class Loader {
         }
 
         # LOAD ROUTER
-        return self::loadByArray($aRoutes);
+        return self::loadByArray($aRoutes, $sBasePath);
 
     }
 
@@ -92,10 +94,11 @@ class Loader {
      * JSON FILES
      *
      * @param mixed $mJsonFilePathList List of files paths
+     * @param string $sBasePath [optional]
      * @return Router
      * @throws LoaderException
      */
-    static public function loadByJson($mJsonFilePathList) {
+    static public function loadByJson($mJsonFilePathList, $sBasePath = '') {
 
         # SKIP ON ERROR
         if(!$mJsonFilePathList) { throw new LoaderException('No Json files found'); }
@@ -119,7 +122,7 @@ class Loader {
         }
 
         # LOAD ROUTER
-        return self::loadByArray($aRoutes);
+        return self::loadByArray($aRoutes, $sBasePath);
 
     }
 
