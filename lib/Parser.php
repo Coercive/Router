@@ -152,7 +152,7 @@ class Parser {
 
                 # CLEAN
                 $sPath = $this->clean($sRoute);
-                $sPath = $sPath ? $sBasePath . '/' . $sPath : $sBasePath;
+                $sPath = $sPath ? ($sBasePath ? $sBasePath . '/' : '') . $sPath : $sBasePath;
 
                 # PREPARE PROPERTIES
                 $this->_aRoutes[$sId]['langs'][] = $sLang;
