@@ -1,6 +1,8 @@
 <?php
 namespace Coercive\Utility\Router;
 
+use Coercive\Utility\Router\Exception\ParserException;
+
 /**
  * Parser
  *
