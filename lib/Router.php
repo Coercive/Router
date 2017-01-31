@@ -349,7 +349,8 @@ class Router {
     public function switchLang($sLang, $bFullUrl = false) {
 
         # REQUESTED URL
-        if(!in_array($sLang, $this->_aRoutes[$this->_sId]['langs'])) { return ''; }
+        if(!$this->_sId || !$this->_aRoutes[$this->_sId]) { return ''; }
+        if(!!in_array($sLang, $this->_aRoutes[$this->_sId]['langs'])) { return ''; }
         $sUrl = $this->_aRoutes[$this->_sId]['routes'][$sLang]['rewrite'];
 
         # PARAM GET
