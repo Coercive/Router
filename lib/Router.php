@@ -11,7 +11,7 @@ use Coercive\Utility\Router\Exception\RouterException;
  * (FR) La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @version		3.0.4
+ * @version		3.0.5
  * @package		Coercive\Utility\Router
  * @link		@link https://github.com/Coercive/Router
  *
@@ -349,8 +349,8 @@ class Router {
     public function switchLang($sLang, $bFullUrl = false) {
 
         # REQUESTED URL
-        if(!$this->_sId || !$this->_aRoutes[$this->_sId]) { return ''; }
-        if(!!in_array($sLang, $this->_aRoutes[$this->_sId]['langs'])) { return ''; }
+        if(!$this->_sId || !isset($this->_aRoutes[$this->_sId])) { return ''; }
+        if(!in_array($sLang, $this->_aRoutes[$this->_sId]['langs'])) { return ''; }
         $sUrl = $this->_aRoutes[$this->_sId]['routes'][$sLang]['rewrite'];
 
         # PARAM GET
