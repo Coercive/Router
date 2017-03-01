@@ -284,3 +284,28 @@ $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'ht
 # example-fabric-url/article-100?param1=test1&param2=test2
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], ['param1'=>'test1', 'param2'=>'test2'])
 ```
+
+Load Controller
+---------------
+```php
+#
+# Class
+#
+$oCtrl = new Ctrl;
+
+#
+# Set default controller
+#
+$oCtrl->setDefault('Error500\\CtrlName::MethodName');
+
+#
+# Set App
+# (Object optional : Example\\CtrlName->MethodName(> Param App <))
+#
+$oCtrl->setApp(new App);
+
+#
+# Load
+#
+$oCtrl->load('Example\\MyController::HomePage');
+```
