@@ -82,7 +82,7 @@ class Router {
         $this->_HTTP_USER_AGENT = (string) filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         # INPUT SERVER REQUEST
-        $this->_REQUEST_URI = (string) urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL));
+        $this->_REQUEST_URI = (string) trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL)), '/');
         $this->_QUERY_STRING = (string) urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL));
 
     }
@@ -276,7 +276,7 @@ class Router {
     public function isAjaxRequest() { return $this->_bAjaxDemand; }
     public function setAjaxRequest($bBool) { $this->_bAjaxDemand = $bBool; return $this; }
     public function getHttpAccept() { return $this->_sHttpAccept; }
-    public function getCurrentURL() { return $this->_REQUEST_URI; }
+    public function getCurrentURL($bFullUrl = false) { return $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/{$this->_REQUEST_URI}" : $this->_REQUEST_URI; }
     public function getServerRootPath() { return $this->_DOCUMENT_ROOT; }
     public function getPreparedRoutesForCache() { return $this->_aRoutes; }
 
