@@ -10,7 +10,7 @@ use Coercive\Utility\Router\Exception\ParserException;
  * @link		@link https://github.com/Coercive/Router
  *
  * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2016 - 2017 Anthony Moral
+ * @copyright   (c) 2016 - 2018 Anthony Moral
  * @license 	http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
  */
 class Parser {
@@ -21,7 +21,7 @@ class Parser {
     # REGEX
     const DEFAULT_MATCH_REGEX = '[^/]+';
     const REGEX_PARAM = '`\{([a-z_][a-z0-9_-]*)(?::([^{}]*(?:\{(?-1)\}[^{}]*)*))?\}`i';
-    const REGEX_OPTION = '`\[(.*#[0-9]+#.*)?\]`';
+	const REGEX_OPTION = '`\[([^\[\]]*#[0-9]+#[^\[\]]*)?\]`';
     const REGEX_OPTION_NUMBER = '`#([0-9]+)#`';
     const REGEX_LOST_OPTION = '`\[[^\]]*\]`';
 
