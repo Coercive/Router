@@ -11,12 +11,11 @@ use Coercive\Utility\Router\Exception\RouterException;
  * (FR) La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @version		3.0.5
  * @package		Coercive\Utility\Router
  * @link		@link https://github.com/Coercive/Router
  *
  * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2016 - 2017 Anthony Moral
+ * @copyright   (c) 2016 - 2018 Anthony Moral
  * @license 	http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
  */
 class Router {
@@ -390,7 +389,7 @@ class Router {
         if(!$sLang) { $sLang = $this->_sLang; }
 
         # REQUESTED URL
-        if(!in_array($sLang, $this->_aRoutes[$sId]['langs'])) { return ''; }
+        if(!isset($this->_aRoutes[$sId]['langs']) || !in_array($sLang, $this->_aRoutes[$sId]['langs'])) { return ''; }
         $sUrl = $this->_aRoutes[$sId]['routes'][$sLang]['rewrite'];
 
         # PARAM GET
