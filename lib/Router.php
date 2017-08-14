@@ -271,6 +271,7 @@ class Router {
     public function getHost() { return $this->_HTTP_HOST; }
     public function getAccessMode() { return $this->_REQUEST_METHOD; }
     public function getHttpMode() { return $this->_REQUEST_SCHEME; }
+    public function getCurrentRouteParams() { return $this->_aRouteParamsGet; }
     public function getTranslateRouteParams() { return $this->_aTranslateRouteParams; }
     public function isAjaxRequest() { return $this->_bAjaxDemand; }
     public function setAjaxRequest($bBool) { $this->_bAjaxDemand = $bBool; return $this; }
