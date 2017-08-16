@@ -196,7 +196,7 @@ class Router {
         foreach ($this->_aRoutes[$sId]['routes'][$sLang]['params'] as $iKey => $aParam) {
 
             # EXIST
-            if (isset($aInjectedParams[$aParam['name']]) && !is_bool($aInjectedParams[$aParam['name']])) {
+            if (isset($aInjectedParams[$aParam['name']]) && !is_bool($aInjectedParams[$aParam['name']]) && '' !== $aInjectedParams[$aParam['name']]) {
 
                 # PARAM VAUE
                 $sValue = $aInjectedParams[$aParam['name']];
