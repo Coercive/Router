@@ -124,6 +124,15 @@ $oRouter = Loader::loadByArray([...], '/folder/subfolder')
 # If you don't use the loader :
 $oParser->setBasePath('/folder/subfolder')
 
+# OPTIONAL CONFIG PREFIX for loadByYaml or loadByJson
+# (if use loadByArray : you have to set it yourself)
+$oRouter = Loader::loadByYaml([
+	'/path/routes.yml',
+	'SHOP_' => '/other-directory/shop/path/routes.yml',
+	'BLOG_' => '/other-directory/blog/path/routes.yml'
+]);
+# (the first route has no prefix, the others ID : SHOP_... and BLOG_...)
+
 ```
 
 Basic Functions
@@ -272,7 +281,7 @@ $oRouter->url('HOME', 'EN') // EN language
 # example-fabric-url/article-100
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100])
 
-# Full scheme autodetect (true) or manually set
+# Full scheme autodetect (true | 'auto') or manually set
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, true)
 
 # http://www.my-web-site.com/example-fabric-url/article-100
@@ -280,6 +289,12 @@ $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'ht
 
 # https://www.my-web-site.com/example-fabric-url/article-100
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'https')
+
+# ftp://www.my-web-site.com/example-fabric-url/article-100
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'ftp')
+
+# http://custom-domain.com/example-fabric-url/article-100
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'http://custom-domain.com')
 
 # example-fabric-url/article-100?param1=test1&param2=test2
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], ['param1'=>'test1', 'param2'=>'test2'])
