@@ -280,9 +280,19 @@ class Router {
 	public function isAjaxRequest() { return $this->_bAjaxDemand; }
 	public function setAjaxRequest($bBool) { $this->_bAjaxDemand = $bBool; return $this; }
 	public function getHttpAccept() { return $this->_sHttpAccept; }
-	public function getCurrentURL($bFullUrl = false) { return $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/{$this->_REQUEST_URI}" : $this->_REQUEST_URI; }
 	public function getServerRootPath() { return $this->_DOCUMENT_ROOT; }
 	public function getPreparedRoutesForCache() { return $this->_aRoutes; }
+
+	/**
+	 * GET CURRENT URL
+	 *
+	 * @param bool $bFullUrl
+	 * @return string
+	 */
+	public function getCurrentURL($bFullUrl = false) {
+		$sCurrentUrl = $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/{$this->_REQUEST_URI}" : $this->_REQUEST_URI;
+		return htmlspecialchars($sCurrentUrl);
+	}
 
 	/**
 	 * FORCE HOST
