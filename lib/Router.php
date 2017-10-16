@@ -284,9 +284,19 @@ class Router {
 	public function getPreparedRoutesForCache() { return $this->_aRoutes; }
 
 	/**
+	 * GET RAW CURRENT URL
+	 *
+	 * @param bool $bFullUrl [optional]
+	 * @return string
+	 */
+	public function getRawCurrentURL($bFullUrl = false) {
+		return $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/{$this->_REQUEST_URI}" : $this->_REQUEST_URI;
+	}
+
+	/**
 	 * GET CURRENT URL
 	 *
-	 * @param bool $bFullUrl
+	 * @param bool $bFullUrl [optional]
 	 * @return string
 	 */
 	public function getCurrentURL($bFullUrl = false) {
