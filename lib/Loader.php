@@ -1,6 +1,7 @@
 <?php
 namespace Coercive\Utility\Router;
 
+use Coercive\Utility\Router\Exception\LoaderException;
 use Symfony\Component\Yaml\Parser as YamlParser;
 
 /**
