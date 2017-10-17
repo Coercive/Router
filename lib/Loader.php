@@ -8,7 +8,7 @@ use Symfony\Component\Yaml\Parser as YamlParser;
  * Loader
  *
  * @package		Coercive\Utility\Router
- * @link		@link https://github.com/Coercive/Router
+ * @link		https://github.com/Coercive/Router
  *
  * @author  	Anthony Moral <contact@coercive.fr>
  * @copyright   (c) 2016 - 2018 Anthony Moral
