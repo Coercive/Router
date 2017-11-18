@@ -1,8 +1,8 @@
 <?php
 namespace Coercive\Utility\Router;
 
-use Coercive\Utility\Router\Exception\CtrlException;
 use ReflectionMethod;
+use Coercive\Utility\Router\Exception\CtrlException;
 
 /**
  * Ctrl
@@ -19,6 +19,9 @@ class Ctrl {
 	/** @var string */
 	private $_sDefaultController = '';
 
+	/** @var string */
+	private $_sAllowedNamespace = '';
+
 	/** @var object */
 	private $_oApp = null;
 
@@ -30,6 +33,19 @@ class Ctrl {
 	 */
     public function setDefault($sDefault) {
 		$this->_sDefaultController = $sDefault;
+		return $this;
+	}
+
+	/**
+	 * SET ALLOWED NAMESPACE
+	 *
+	 * Verify if namespace start with this allowed path
+	 *
+	 * @param string $sNamespace
+	 * @return Ctrl
+	 */
+	public function setAllowedNamespace($sNamespace) {
+		$this->_sAllowedNamespace = $sNamespace;
 		return $this;
 	}
 
@@ -54,11 +70,18 @@ class Ctrl {
 	public function load($sControllerPath) {
 
 		# Verify Path
-		if(!preg_match('`^(?P<project>[a-z0-9_]+)\\\(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $sControllerPath, $aMatches)) {
+		if(!preg_match('`^(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $sControllerPath, $aMatches)) {
 			throw new CtrlException(CtrlException::CONTROLLER_PATTERN_ERROR . $sControllerPath);
 		}
-		$sController = $aMatches['project'] . '\\' . $aMatches['controller'];
-		$sMethod = $aMatches['method'];
+
+		# Bind
+		$sController = $aMatches['controller'] ?? '';
+		$sMethod = $aMatches['method'] ?? '';
+
+		# Verify allowed
+		if($this->_sAllowedNamespace && 0 !== strpos($sController, $this->_sAllowedNamespace)) {
+			throw new CtrlException(CtrlException::NAMESPACE_NOT_ALLOWED . $sControllerPath);
+		}
 
 		# Not callable : 500
 		if(!is_callable([$sController, $sMethod])) {
@@ -69,7 +92,12 @@ class Ctrl {
 		}
 
 		# Call
-		return (new ReflectionMethod($sController, $sMethod))->isStatic() ? $sController::{$sMethod}($this->_oApp) : (new $sController($this->_oApp))->{$sMethod}($this->_oApp);
+		if($this->_oApp) {
+			return (new ReflectionMethod($sController, $sMethod))->isStatic() ? $sController::{$sMethod}($this->_oApp) : (new $sController($this->_oApp))->{$sMethod}($this->_oApp);
+		}
+		else {
+			return (new ReflectionMethod($sController, $sMethod))->isStatic() ? $sController::{$sMethod}() : (new $sController())->{$sMethod}();
+		}
 
 	}
 

@@ -15,7 +15,8 @@ use Exception;
  */
 class CtrlException extends Exception {
 
-	const CONTROLLER_PATTERN_ERROR = 'CtrlException::Pattern don\'t match ';
-	const DEFAULT_CONTROLLER_ERROR = 'CtrlException::Can\'t load default ctrl ';
+	const CONTROLLER_PATTERN_ERROR = 'CtrlException : Pattern don\'t match ';
+	const DEFAULT_CONTROLLER_ERROR = 'CtrlException : Can\'t load default ctrl ';
+	const NAMESPACE_NOT_ALLOWED = 'CtrlException : Namespace is not allowed ';
 
 }
