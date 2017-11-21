@@ -69,6 +69,14 @@ class Ctrl {
 	 */
 	public function load($sControllerPath) {
 
+		# No controller
+		if(!$sControllerPath) {
+			if(!$this->_sDefaultController) {
+				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $sControllerPath);
+			}
+			return $this->load($this->_sDefaultController);
+		}
+
 		# Verify Path
 		if(!preg_match('`^(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $sControllerPath, $aMatches)) {
 			throw new CtrlException(CtrlException::CONTROLLER_PATTERN_ERROR . $sControllerPath);
