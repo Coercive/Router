@@ -307,10 +307,10 @@ class Router {
 	/**
 	 * GET CURRENT BASE URL
 	 *
-	 * @param string $sheme
+	 * @param string $sheme [optional]
 	 * @return string
 	 */
-	public function getBaseUrl(string $sheme): string
+	public function getBaseUrl(string $sheme = 'auto'): string
 	{
 		# Self detect
 		if($sheme === '1' || $sheme === 'auto') {
@@ -323,7 +323,7 @@ class Router {
 		# User set
 		else {
 			$sheme = rtrim(strtolower($sheme), '/ ');
-			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->_HTTP_HOST : $mFullUrlScheme;
+			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->_HTTP_HOST : $sheme;
 		}
 	}
 
