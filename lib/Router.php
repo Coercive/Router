@@ -305,6 +305,29 @@ class Router {
 	}
 
 	/**
+	 * GET CURRENT BASE URL
+	 *
+	 * @param string $sheme
+	 * @return string
+	 */
+	public function getBaseUrl(string $sheme): string
+	{
+		# Self detect
+		if($sheme === '1' || $sheme === 'auto') {
+			return $this->getHttpMode() . '://' . $this->_HTTP_HOST;
+		}
+		# Automatic
+		elseif($sheme === '//') {
+			return '//' . $this->_HTTP_HOST;
+		}
+		# User set
+		else {
+			$sheme = rtrim(strtolower($sheme), '/ ');
+			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->_HTTP_HOST : $mFullUrlScheme;
+		}
+	}
+
+	/**
 	 * FORCE HOST
 	 *
 	 * @param string $sHost
@@ -427,19 +450,7 @@ class Router {
 
 		# FULL SCHEME
 		if($mFullUrlScheme) {
-			# Self detect
-			if($mFullUrlScheme === true || $mFullUrlScheme === 'auto') {
-				$mFullUrlScheme = "{$this->getHttpMode()}://{$this->_HTTP_HOST}/";
-			}
-			# Automatic
-			elseif($mFullUrlScheme === '//') {
-				$mFullUrlScheme = "//{$this->_HTTP_HOST}/";
-			}
-			# User set
-			else {
-				$mFullUrlScheme = rtrim(strtolower($mFullUrlScheme), '/ ');
-				$mFullUrlScheme = in_array($mFullUrlScheme, self::REQUEST_SCHEME, true) ? "$mFullUrlScheme://{$this->_HTTP_HOST}/" : "$mFullUrlScheme/";
-			}
+			$mFullUrlScheme = $this->getBaseUrl() . '/';
 		}
 
 		# DELETE LOST PARAMS
