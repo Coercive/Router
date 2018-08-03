@@ -326,37 +326,55 @@ class Router {
 			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->_HTTP_HOST : $sheme;
 		}
 	}
-
+	
 	/**
 	 * FORCE HOST
 	 *
-	 * @param string $sHost
-	 * @return void
+	 * @param string $host
+	 * @return $this
 	 */
-	public function forceHost($sHost) {
-		$this->_HTTP_HOST = $sHost;
+	public function forceHost(string $host): Router
+	{
+		$this->_HTTP_HOST = $host;
+		return $this;
+	}
+
+	/**
+	 * FORCE SHEME
+	 *
+	 * @param string $sheme
+	 * @return $this
+	 */
+	public function forceSheme(string $sheme): Router
+	{
+		$this->_REQUEST_SCHEME = $sheme;
+		return $this;
 	}
 
 	/**
 	 * FORCE LANGUAGE
 	 *
-	 * @param string $sLang
-	 * @return void
+	 * @param string $language
+	 * @return $this
 	 */
-	public function forceLang($sLang) {
-		$this->_sLang = $sLang;
+	public function forceLang(string $language): Router
+	{
+		$this->_sLang = $language;
+		return $this;
 	}
 
 	/**
 	 * FORCE GET PARAM EXIST
 	 *
-	 * @param array $aGET
-	 * @return void
+	 * @param array $list
+	 * @return $this
 	 */
-	public function forceExistGET($aGET) {
-		foreach ($aGET as $sName) {
-			if(!isset($_GET[$sName])) { $_GET[$sName] = null; }
+	public function forceExistGET(array $list): Router
+	{
+		foreach ($list as $name) {
+			if(!isset($_GET[$name])) { $_GET[$name] = null; }
 		}
+		return $this;
 	}
 
 	/**
