@@ -2,37 +2,39 @@
 namespace Coercive\Utility\Router;
 
 use ReflectionMethod;
+use ReflectionException;
 use Coercive\Utility\Router\Exception\CtrlException;
 
 /**
  * Ctrl
  *
  * @package		Coercive\Utility\Router
- * @link		@link https://github.com/Coercive/Router
+ * @link		https://github.com/Coercive/Router
  *
  * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2016 - 2017 Anthony Moral
- * @license 	http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
+ * @copyright   (c) 2018 Anthony Moral
+ * @license 	MIT
  */
 class Ctrl {
 
 	/** @var string */
-	private $_sDefaultController = '';
+	private $defaultController = '';
 
 	/** @var string */
-	private $_sAllowedNamespace = '';
+	private $allowedNamespace = '';
 
-	/** @var object */
-	private $_oApp = null;
+	/** @var mixed */
+	private $App = null;
 
 	/**
 	 * SET DEFAULT CONTROLLER (ERROR 500)
 	 *
-	 * @param string $sDefault
+	 * @param string $default
 	 * @return Ctrl
 	 */
-    public function setDefault($sDefault) {
-		$this->_sDefaultController = $sDefault;
+    public function setDefault(string $default): Ctrl
+	{
+		$this->defaultController = $default;
 		return $this;
 	}
 
@@ -41,72 +43,73 @@ class Ctrl {
 	 *
 	 * Verify if namespace start with this allowed path
 	 *
-	 * @param string $sNamespace
+	 * @param string $namespace
 	 * @return Ctrl
 	 */
-	public function setAllowedNamespace($sNamespace) {
-		$this->_sAllowedNamespace = $sNamespace;
+	public function setAllowedNamespace(string $namespace): Ctrl
+	{
+		$this->allowedNamespace = $namespace;
 		return $this;
 	}
 
 	/**
 	 * SET APP TO INJECT
 	 *
-	 * @param object $oApp
+	 * @param mixed $App
 	 * @return Ctrl
 	 */
-	public function setApp($oApp) {
-		$this->_oApp = $oApp;
+	public function setApp($App): Ctrl
+	{
+		$this->App = $App;
 		return $this;
 	}
 
 	/**
 	 * Ctrl loader
 	 *
-	 * @param string $sControllerPath : ProjectCode\Controller::Method
-	 * @return object
+	 * @param string $class : ProjectCode\Controller::Method
+	 * @return mixed
 	 * @throws CtrlException
+	 * @throws ReflectionException
 	 */
-	public function load($sControllerPath) {
-
+	public function load(string $class)
+	{
 		# No controller
-		if(!$sControllerPath) {
-			if(!$this->_sDefaultController) {
-				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $sControllerPath);
+		if(!$class) {
+			if(!$this->defaultController) {
+				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $class);
 			}
-			return $this->load($this->_sDefaultController);
+			return $this->load($this->defaultController);
 		}
 
 		# Verify Path
-		if(!preg_match('`^(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $sControllerPath, $aMatches)) {
-			throw new CtrlException(CtrlException::CONTROLLER_PATTERN_ERROR . $sControllerPath);
+		if(!preg_match('`^(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $class, $matches)) {
+			throw new CtrlException(CtrlException::CONTROLLER_PATTERN_ERROR . $class);
 		}
 
 		# Bind
-		$sController = $aMatches['controller'] ?? '';
-		$sMethod = $aMatches['method'] ?? '';
+		$controller = $matches['controller'] ?? '';
+		$method = $matches['method'] ?? '';
 
 		# Verify allowed
-		if($this->_sAllowedNamespace && 0 !== strpos($sController, $this->_sAllowedNamespace)) {
-			throw new CtrlException(CtrlException::NAMESPACE_NOT_ALLOWED . $sControllerPath);
+		if($this->allowedNamespace && 0 !== strpos($controller, $this->allowedNamespace)) {
+			throw new CtrlException(CtrlException::NAMESPACE_NOT_ALLOWED . $class);
 		}
 
 		# Not callable : 500
-		if(!is_callable([$sController, $sMethod])) {
-			if($sControllerPath === $this->_sDefaultController || !$this->_sDefaultController) {
-				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $sControllerPath);
+		if(!is_callable([$controller, $method])) {
+			if($class === $this->defaultController || !$this->defaultController) {
+				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $class);
 			}
-			return $this->load($this->_sDefaultController);
+			return $this->load($this->defaultController);
 		}
 
 		# Call
-		if($this->_oApp) {
-			return (new ReflectionMethod($sController, $sMethod))->isStatic() ? $sController::{$sMethod}($this->_oApp) : (new $sController($this->_oApp))->{$sMethod}($this->_oApp);
+		if($this->App) {
+			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}($this->App) : (new $controller($this->App))->{$method}($this->App);
 		}
 		else {
-			return (new ReflectionMethod($sController, $sMethod))->isStatic() ? $sController::{$sMethod}() : (new $sController())->{$sMethod}();
+			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}() : (new $controller())->{$method}();
 		}
-
 	}
-
 }
