@@ -1,93 +1,90 @@
 <?php
 namespace Coercive\Utility\Router;
 
+use Exception;
 use Coercive\Utility\Globals\Globals;
 use Coercive\Utility\Router\Exception\RouterException;
 
 /**
  * Router
- * PHP Version 	7
  *
- * (FR) La simplicité est la sophistication suprême.
+ * La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
  * @package		Coercive\Utility\Router
- * @link		@link https://github.com/Coercive/Router
+ * @link		https://github.com/Coercive/Router
  *
  * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2016 - 2018 Anthony Moral
- * @license 	http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
+ * @copyright   (c) 2018 Anthony Moral
+ * @license 	MIT
  */
-class Router {
-
+class Router
+{
 	const REQUEST_SCHEME = [
 		'http', 'https', 'ftp'
 	];
 
 	/** @var string INPUT_SERVER */
 	private
-		$_REQUEST_SCHEME,
-		$_DOCUMENT_ROOT,
-		$_HTTP_HOST,
-		$_REQUEST_METHOD,
-		$_HTTP_USER_AGENT,
-		$_REQUEST_URI,
-		$_QUERY_STRING;
+		$REQUEST_SCHEME,
+		$DOCUMENT_ROOT,
+		$HTTP_HOST,
+		$REQUEST_METHOD,
+		$REQUEST_URI,
+		$QUERY_STRING;
 
 	/** @var Globals */
-	private $_oGlobals = null;
+	private $Globals = null;
 
 	/** @var Parser */
 	private $_oParser = null;
 
 	/** @var array From Parser */
-	private $_aRoutes = [];
+	private $routes = [];
 
 	/** @var string Current URI */
-	private $_sUrl = null;
+	private $url = null;
 
 	/** @var array Not rewritten GET params (after '?' in url) */
-	private $_aParamsGet = [];
+	private $queryParamsGet = [];
 
 	/** @var array Rewritten route GET params */
-	private $_aRouteParamsGet = [];
+	private $routeParamsGet = [];
 
 	/** @var array Overload params for switch url lang */
-	private $_aTranslateRouteParams = [];
+	private $overloadedRouteParams = [];
 
 	/** @var string Current matched route ID */
-	private $_sId = null;
+	private $id = '';
 
 	/** @var string Current matched route LANG */
-	private $_sLang = null;
+	private $lang = '';
 
 	/** @var string Current matched route CONTROLLER */
-	private $_sController = null;
+	private $ctrl = '';
 
 	/** @var bool is an ajax request */
-	private $_bAjaxDemand = false;
+	private $ajax = false;
 
 	/** @var string request type accepted */
-	private $_sHttpAccept = null;
+	private $httpAccept = '';
 
 	/**
 	 * INIT INPUT SERVER
 	 *
 	 * @return void
 	 */
-	private function _initInputServer() {
-
+	private function initInputServer()
+	{
 		# INPUT_SERVER
-		$this->_REQUEST_SCHEME = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
-		$this->_DOCUMENT_ROOT = (string) filter_input(INPUT_SERVER, 'DOCUMENT_ROOT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-		$this->_HTTP_HOST = (string) filter_input(INPUT_SERVER, 'HTTP_HOST', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-		$this->_REQUEST_METHOD = (string) filter_input(INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-		$this->_HTTP_USER_AGENT = (string) filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+		$this->REQUEST_SCHEME = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+		$this->DOCUMENT_ROOT = (string) filter_input(INPUT_SERVER, 'DOCUMENT_ROOT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+		$this->HTTP_HOST = (string) filter_input(INPUT_SERVER, 'HTTP_HOST', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+		$this->REQUEST_METHOD = (string) filter_input(INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 		# INPUT SERVER REQUEST
-		$this->_REQUEST_URI = (string) trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL)), '/');
-		$this->_QUERY_STRING = (string) urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL));
-
+		$this->REQUEST_URI = trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL)), '/');
+		$this->QUERY_STRING = urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL));
 	}
 
 	/**
@@ -95,12 +92,11 @@ class Router {
 	 *
 	 * @return void
 	 */
-	private function _initQueryString() {
-
+	private function initQueryString()
+	{
 		# Array of params
-		parse_str($this->_QUERY_STRING, $aGet);
-		$this->_aParamsGet = $aGet;
-
+		parse_str($this->QUERY_STRING, $array);
+		$this->queryParamsGet = $array;
 	}
 
 	/**
@@ -108,26 +104,25 @@ class Router {
 	 *
 	 * @return void
 	 */
-	private function _initAjaxDetection() {
+	private function initAjaxDetection()
+	{
+		# The request is ajax
+		$this->ajax = 'XMLHttpRequest' === filter_input(INPUT_SERVER, 'HTTP_X_REQUESTED_WITH', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-		/** @var bool */
-		$this->_bAjaxDemand = filter_input(INPUT_SERVER, 'HTTP_X_REQUESTED_WITH', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'XMLHttpRequest';
-
-		/** @var string $sAccept */
-		$sAccept = (string) filter_input(INPUT_SERVER, 'HTTP_ACCEPT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-		if (false !== strpos($sAccept, 'text/html')) {
-			$this->_sHttpAccept = 'html';
+		# The return type allowed by request
+		$type = (string) filter_input(INPUT_SERVER, 'HTTP_ACCEPT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+		if (false !== strpos($type, 'text/html')) {
+			$this->httpAccept = 'html';
 		}
-		elseif (false !== strpos($sAccept, 'application/json')) {
-			$this->_sHttpAccept = 'json';
+		elseif (false !== strpos($type, 'application/json')) {
+			$this->httpAccept = 'json';
 		}
-		elseif (false !== strpos($sAccept, 'application/xml')) {
-			$this->_sHttpAccept = 'xml';
+		elseif (false !== strpos($type, 'application/xml')) {
+			$this->httpAccept = 'xml';
 		}
 		else {
-			$this->_sHttpAccept = 'html';
+			$this->httpAccept = 'html';
 		}
-
 	}
 
 	/**
@@ -136,40 +131,39 @@ class Router {
 	 * @return void
 	 * @throws RouterException
 	 */
-	private function _run() {
-
+	private function run()
+	{
 		# SECURITY
-		if(!$this->_aRoutes) { throw new RouterException('Router cant start. No routes avialable.'); }
+		if(!$this->routes) { throw new RouterException('Router cant start. No routes avialable.'); }
 
 		# PREPARE EACH ROUTE
-		foreach($this->_aRoutes as $sId => $aItem) {
+		foreach($this->routes as $id => $item) {
 
 			# EACH LANGUAGE
-			foreach($aItem['routes'] as $sLang => $aDatas) {
+			foreach($item['routes'] as $lang => $datas) {
 
 				# MATCH
-				if($this->_match($aDatas['regex'])) {
-					$this->_sId = $sId;
-					$this->_sLang = $sLang;
-					$this->_sController = $aItem['controller'];
+				if($this->match($datas['regex'])) {
+					$this->id = $id;
+					$this->lang = $lang;
+					$this->ctrl = $item['controller'];
 					return;
 				}
-
 			}
 		}
-
 	}
 
 	/**
 	 * MATCH URL / ROUTE
 	 *
-	 * @param string $sPath
+	 * @param string $pattern
 	 * @return bool
 	 */
-	private function _match($sPath) {
-		if(!preg_match("`^$sPath$`i", $this->_sUrl, $aMatches)) { return false; }
-		$aIntKeys = array_filter(array_keys($aMatches), 'is_numeric');
-		$this->_aRouteParamsGet = array_diff_key($aMatches, array_flip($aIntKeys));
+	private function match(string $pattern): bool
+	{
+		if(!preg_match("`^$pattern$`i", $this->url, $matches)) { return false; }
+		$intKeys = array_filter(array_keys($matches), 'is_numeric');
+		$this->routeParamsGet = array_diff_key($matches, array_flip($intKeys));
 		return true;
 	}
 
@@ -178,130 +172,252 @@ class Router {
 	 *
 	 * @return void
 	 */
-	private function _initSuperGlobalGET() {
-		$this->_aParamsGet = $this->_oGlobals->autoFilterManualVar($this->_aParamsGet);
-		$this->_aRouteParamsGet = $this->_oGlobals->autoFilterManualVar($this->_aRouteParamsGet);
-		$_GET = array_replace_recursive([], $_GET, $this->_aParamsGet, $this->_aRouteParamsGet);
+	private function initSuperGlobalGET()
+	{
+		$this->queryParamsGet = $this->Globals->autoFilterManualVar($this->queryParamsGet);
+		$this->routeParamsGet = $this->Globals->autoFilterManualVar($this->routeParamsGet);
+		$_GET = array_replace_recursive([], $_GET, $this->queryParamsGet, $this->routeParamsGet);
 	}
 
 	/**
 	 * REWRITE URL WITH PARAMS
 	 *
-	 * @param string $sId
-	 * @param string $sLang
-	 * @param array $aInjectedParams
+	 * @param string $id
+	 * @param string $lang
+	 * @param array $injectedParams
 	 * @return string
 	 * @throws RouterException
 	 */
-	private function _rewriteUrl($sId, $sLang, $aInjectedParams) {
+	private function rewriteUrl(string $id, string $lang, array $injectedParams): string
+	{
+		# Original url to rewrite
+		$url = $this->routes[$id]['routes'][$lang]['original'];
 
-		$sUrl = $this->_aRoutes[$sId]['routes'][$sLang]['original'];
-
-		foreach ($this->_aRoutes[$sId]['routes'][$sLang]['params'] as $iKey => $aParam) {
+		# Rewrite params if needed
+		foreach ($this->routes[$id]['routes'][$lang]['params'] as $key => $param) {
 
 			# EXIST
-			if (isset($aInjectedParams[$aParam['name']]) && !is_bool($aInjectedParams[$aParam['name']]) && '' !== $aInjectedParams[$aParam['name']]) {
+			if (isset($injectedParams[$param['name']]) && !is_bool($injectedParams[$param['name']]) && '' !== $injectedParams[$param['name']]) {
 
 				# PARAM VAUE
-				$sValue = $aInjectedParams[$aParam['name']];
-				if(!preg_match("`$aParam[regex]`i", $sValue)) {
-					throw new RouterException("Route param regex not match : $aParam[name], regex : $aParam[regex], value : $sValue");
+				$value = $injectedParams[$param['name']];
+				if(!preg_match("`^$param[regex]$`i", $value)) {
+					throw new RouterException("Route param regex not match : $param[name], regex : $param[regex], value : $value");
 				}
 
 				# TRIM OPTIONAL BRACKETS
-				if($aParam['optional']) {
-					$sUrl = str_replace($aParam['optional'], trim($aParam['optional'], '[]'), $sUrl);
+				if($param['optional']) {
+					$url = str_replace($param['optional'], trim($param['optional'], '[]'), $url);
 				}
 
 				# INJECT PARAM
-				$sUrl = str_replace($aParam['subject'], $sValue, $sUrl);
+				$url = str_replace($param['subject'], $value, $url);
 			}
 
 			# OPTIONAL EMPTY PARAM
-			elseif(!empty($aParam['optional'])) {
-				$sUrl = str_replace($aParam['optional'], '', $sUrl);
+			elseif(!empty($param['optional'])) {
+				$url = str_replace($param['optional'], '', $url);
 				continue;
 			}
 
 			# FORGOTTEN PARAM
 			else {
-				throw new RouterException("Route required param not found for switch : $aParam[name]");
+				throw new RouterException("Route required param not found for rewrite url : $param[name]");
 			}
 
 		}
 
-		return $sUrl;
-
+		# Builded url
+		return $url;
 	}
 
 	/**
-	 * Init
 	 * Coercive Router constructor.
 	 *
-	 * @param Parser $oParser
+	 * @param Parser $parser
+	 * @return void
+	 * @throws Exception
 	 */
-	public function __construct(Parser $oParser) {
-
+	public function __construct(Parser $parser)
+	{
 		# Bind user routes
-		$this->_oParser = $oParser;
-		$this->_aRoutes = $oParser->get();
-		$this->_oGlobals = new Globals;
+		$this->_oParser = $parser;
+		$this->routes = $parser->get();
+		$this->Globals = new Globals;
 
 		# INPUT SERVER
-		$this->_initInputServer();
+		$this->initInputServer();
 
 		# AJAX
-		$this->_initAjaxDetection();
+		$this->initAjaxDetection();
 
 		# PARAMS GET
-		$this->_initQueryString();
+		$this->initQueryString();
 
 		# URL
-		$this->_sUrl = $oParser->clean($this->_REQUEST_URI);
+		$this->url = $parser->clean($this->REQUEST_URI);
 
 		# RUN
-		$this->_run();
+		$this->run();
 
 		# SET _GET
-		$this->_initSuperGlobalGET();
+		$this->initSuperGlobalGET();
 	}
 
-	/** GETTERS @return string ID - LANG - CONTROLLER */
-	public function getId() { return $this->_sId; }
-	public function getLang() { return $this->_sLang; }
-	public function getController() { return $this->_sController; }
+	/**
+	 * THE ID OF THE CURRENT ROUTE
+	 *
+	 * @return string
+	 */
+	public function getId(): string
+	{
+		return $this->id;
+	}
 
-	/** GETTERS SPECIAL @return string|array|bool */
-	public function getHost() { return $this->_HTTP_HOST; }
-	public function getAccessMode() { return $this->_REQUEST_METHOD; }
-	public function getHttpMode() { return $this->_REQUEST_SCHEME; }
-	public function getCurrentRouteParams() { return $this->_aRouteParamsGet; }
-	public function getTranslateRouteParams() { return $this->_aTranslateRouteParams; }
-	public function isAjaxRequest() { return $this->_bAjaxDemand; }
-	public function setAjaxRequest($bBool) { $this->_bAjaxDemand = $bBool; return $this; }
-	public function getHttpAccept() { return $this->_sHttpAccept; }
-	public function getServerRootPath() { return $this->_DOCUMENT_ROOT; }
-	public function getPreparedRoutesForCache() { return $this->_aRoutes; }
+	/**
+	 * THE LANGUAGE OF THE CURRENT ROUTE
+	 *
+	 * @return string
+	 */
+	public function getLang(): string
+	{
+		return $this->lang;
+	}
+
+	/**
+	 * THE CONTROLLER OF THE CURRENT ROUTE
+	 *
+	 * @return string
+	 */
+	public function getController(): string
+	{
+		return $this->ctrl;
+	}
+
+	/**
+	 * THE CURRENT HOST
+	 *
+	 * @return string
+	 */
+	public function getHost(): string
+	{
+		return $this->HTTP_HOST;
+	}
+
+	/**
+	 * THE CURRENT REQUEST METHOD
+	 *
+	 * @return string
+	 */
+	public function getAccessMode(): string
+	{
+		return $this->REQUEST_METHOD;
+	}
+
+	/**
+	 * THE CURRENT REQUEST SCHEME
+	 *
+	 * @return string
+	 */
+	public function getHttpMode(): string
+	{
+		return $this->REQUEST_SCHEME;
+	}
+
+	/**
+	 * ROUTE PARAMS
+	 *
+	 * @return array
+	 */
+	public function getCurrentRouteParams(): array
+	{
+		return $this->routeParamsGet;
+	}
+
+	/**
+	 * TRANSLATED ROUTE PARAMS
+	 *
+	 * @return array
+	 */
+	public function getOverloadedRouteParams(): array
+	{
+		return $this->overloadedRouteParams;
+	}
+
+	/**
+	 * IS THE CURRENT REQUEST FROM AJAX METHOD
+	 *
+	 * @return bool
+	 */
+	public function isAjaxRequest(): bool
+	{
+		return $this->ajax;
+	}
+
+	/**
+	 * SET CUSTOM AJAX RESQUEST MODE
+	 *
+	 * @param $status
+	 * @return $this
+	 */
+	public function setAjaxRequest(bool $status): Router
+	{
+		$this->ajax = $status;
+		return $this;
+	}
+
+	/**
+	 * HTTP ACCEPT
+	 *
+	 * @return string
+	 */
+	public function getHttpAccept(): string
+	{
+		return $this->httpAccept;
+	}
+
+	/**
+	 * SERVER ROOT PATH
+	 *
+	 * @return string
+	 */
+	public function getServerRootPath(): string
+	{
+		return $this->DOCUMENT_ROOT;
+	}
+
+	/**
+	 * EXPORT PREPARED ROUTES
+	 *
+	 * For log debug or cache injection
+	 *
+	 * @return array
+	 */
+	public function getPreparedRoutesForCache(): array
+	{
+		return $this->routes;
+	}
 
 	/**
 	 * GET RAW CURRENT URL
 	 *
-	 * @param bool $bFullUrl [optional]
+	 * @param bool $full [optional]
 	 * @return string
 	 */
-	public function getRawCurrentURL($bFullUrl = false) {
-		return $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/{$this->_REQUEST_URI}" : $this->_REQUEST_URI;
+	public function getRawCurrentURL(bool $full = false): string
+	{
+		return $full ? $this->getBaseUrl() . '/' . $this->REQUEST_URI : $this->REQUEST_URI;
 	}
 
 	/**
 	 * GET CURRENT URL
 	 *
-	 * @param bool $bFullUrl [optional]
+	 * @param bool $full [optional]
 	 * @return string
 	 */
-	public function getCurrentURL($bFullUrl = false) {
-		$sCurrentUrl = $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/{$this->_REQUEST_URI}" : $this->_REQUEST_URI;
-		return htmlspecialchars($sCurrentUrl);
+	public function getCurrentURL(bool $full = false): string
+	{
+		return htmlspecialchars($this->getRawCurrentURL($full));
 	}
 
 	/**
@@ -314,16 +430,16 @@ class Router {
 	{
 		# Self detect
 		if($sheme === '1' || $sheme === 'auto') {
-			return $this->getHttpMode() . '://' . $this->_HTTP_HOST;
+			return $this->getHttpMode() . '://' . $this->HTTP_HOST;
 		}
 		# Automatic
 		elseif($sheme === '//') {
-			return '//' . $this->_HTTP_HOST;
+			return '//' . $this->HTTP_HOST;
 		}
 		# User set
 		else {
 			$sheme = rtrim(strtolower($sheme), '/ ');
-			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->_HTTP_HOST : $sheme;
+			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->HTTP_HOST : $sheme;
 		}
 	}
 	
@@ -335,7 +451,7 @@ class Router {
 	 */
 	public function forceHost(string $host): Router
 	{
-		$this->_HTTP_HOST = $host;
+		$this->HTTP_HOST = $host;
 		return $this;
 	}
 
@@ -347,19 +463,19 @@ class Router {
 	 */
 	public function forceSheme(string $sheme): Router
 	{
-		$this->_REQUEST_SCHEME = $sheme;
+		$this->REQUEST_SCHEME = $sheme;
 		return $this;
 	}
 
 	/**
 	 * FORCE LANGUAGE
 	 *
-	 * @param string $language
+	 * @param string $lang
 	 * @return $this
 	 */
-	public function forceLang(string $language): Router
+	public function forceLang(string $lang): Router
 	{
-		$this->_sLang = $language;
+		$this->lang = $lang;
 		return $this;
 	}
 
@@ -380,14 +496,15 @@ class Router {
 	/**
 	 * TRANSLATE PARAM FOR URL SWITCH
 	 *
-	 * @param array $aTranslatedParam
+	 * @param array $list
 	 * @return Router
 	 */
-	public function overloadParam($aTranslatedParam) {
-		if($aTranslatedParam && is_array($aTranslatedParam)) {
-			foreach($aTranslatedParam as $sLang => $aLangParams) {
-				foreach($aLangParams as $sIdParam => $sTranslatedValue) {
-					$this->_aTranslateRouteParams[$sLang][$sIdParam] = urlencode($sTranslatedValue);
+	public function overloadParams(array $list): Router
+	{
+		if($list && is_array($list)) {
+			foreach($list as $lang => $params) {
+				foreach($params as $id => $param) {
+					$this->overloadedRouteParams[$lang][$id] = urlencode($param);
 				}
 			}
 		}
@@ -399,85 +516,87 @@ class Router {
 	 *
 	 * @return Router
 	 */
-	public function resetOverload() {
-		$this->_aTranslateRouteParams = [];
+	public function resetOverloadedParams(): Router
+	{
+		$this->overloadedRouteParams = [];
 		return $this;
 	}
 
 	/**
 	 * GIVE ACTUAL URL IN OTHER LANG
 	 *
-	 * @param string $sLang
-	 * @param bool $bFullUrl [optional]
+	 * @param string $lang
+	 * @param bool $full [optional]
 	 * @return string
+	 * @throws Exception
 	 */
-	public function switchLang($sLang, $bFullUrl = false) {
-
+	public function switchLang(string $lang, bool $full = false): string
+	{
 		# REQUESTED URL
-		if(!$this->_sId || !isset($this->_aRoutes[$this->_sId])) { return ''; }
-		if(!in_array($sLang, $this->_aRoutes[$this->_sId]['langs'])) { return ''; }
-		$sUrl = $this->_aRoutes[$this->_sId]['routes'][$sLang]['rewrite'];
+		if(!$this->id || !isset($this->routes[$this->id])) { return ''; }
+		if(!in_array($lang, $this->routes[$this->id]['langs'])) { return ''; }
+		$url = $this->routes[$this->id]['routes'][$lang]['rewrite'];
 
 		# PARAM GET
-		$sParamGet = empty($this->_aParamsGet) ? '' : http_build_query($this->_aParamsGet);
+		$paramGet = empty($this->queryParamsGet) ? '' : http_build_query($this->queryParamsGet);
 
 		# REWRITE PARAM GET
-		if($this->_aRouteParamsGet) {
-			$aParams = $this->_aRouteParamsGet;
-			if(isset($this->_aTranslateRouteParams[$sLang])) {
-				$aParams = array_replace_recursive($aParams, $this->_aTranslateRouteParams[$sLang]);
+		if($this->routeParamsGet) {
+			$params = $this->routeParamsGet;
+			if(isset($this->overloadedRouteParams[$lang])) {
+				$params = array_replace_recursive($params, $this->overloadedRouteParams[$lang]);
 			}
-			$sUrl = $this->_rewriteUrl($this->_sId, $sLang, $aParams);
+			$url = $this->rewriteUrl($this->id, $lang, $params);
 		}
 
 		# DELETE LOST PARAMS
-		$sUrl = $this->_oParser->deleteLostParams($sUrl);
+		$url = $this->_oParser->deleteLostParams($url);
 
 		# RECOMPOSED URL
-		$sUrl = $sParamGet ? "$sUrl?$sParamGet" : $sUrl;
-		$sUrl = trim($sUrl, '/-');
-		return $bFullUrl ? "{$this->_REQUEST_SCHEME}://{$this->_HTTP_HOST}/$sUrl" : $sUrl;
+		$url = $paramGet ? $url . '?' . $paramGet : $url;
+		$url = trim($url, '/-');
+		return $full ? $this->getBaseUrl() . '/' . $url : $url;
 	}
 
 	/**
 	 * URL FABRIC
 	 *
-	 * @param string $sId
-	 * @param string $sLang [optional]
-	 * @param array $aRewriteParam [optional]
-	 * @param array $aGetParam [optional]
-	 * @param mixed $mFullUrlScheme [optional] (http, https)
+	 * @param string $id
+	 * @param string $lang [optional]
+	 * @param array $rewriteParams [optional]
+	 * @param array $queryParams [optional]
+	 * @param mixed $fullUrlScheme [optional] (http, https, auto, true)
 	 * @return string
+	 * @throws Exception
 	 */
-	public function url($sId, $sLang = '', $aRewriteParam = [], $aGetParam = [], $mFullUrlScheme = '') {
-
+	public function url(string $id, string $lang = '', array $rewriteParams = [], array $queryParams = [], $fullUrlScheme = ''): string
+	{
 		# AUTO LANG
-		if(!$sLang) { $sLang = $this->_sLang; }
+		if(!$lang) { $lang = $this->lang; }
 
 		# REQUESTED URL
-		if(!isset($this->_aRoutes[$sId]['langs']) || !in_array($sLang, $this->_aRoutes[$sId]['langs'])) { return ''; }
-		$sUrl = $this->_aRoutes[$sId]['routes'][$sLang]['rewrite'];
+		if(!isset($this->routes[$id]['langs']) || !in_array($lang, $this->routes[$id]['langs'])) { return ''; }
+		$url = $this->routes[$id]['routes'][$lang]['rewrite'];
 
 		# PARAM GET
-		$sParamGet = $aGetParam ? http_build_query($aGetParam) : '';
+		$paramGet = $queryParams ? http_build_query($queryParams) : '';
 
 		# REWRITE PARAM
-		if($aRewriteParam && is_array($aRewriteParam)) {
-			$sUrl = $this->_rewriteUrl($sId, $sLang, $aRewriteParam);
+		if($rewriteParams && is_array($rewriteParams)) {
+			$url = $this->rewriteUrl($id, $lang, $rewriteParams);
 		}
 
 		# FULL SCHEME
-		if($mFullUrlScheme) {
-			$mFullUrlScheme = $this->getBaseUrl() . '/';
+		if($fullUrlScheme) {
+			$fullUrlScheme = $this->getBaseUrl() . '/';
 		}
 
 		# DELETE LOST PARAMS
-		$sUrl = $this->_oParser->deleteLostParams($sUrl);
+		$url = $this->_oParser->deleteLostParams($url);
 
 		# RECOMPOSED URL
-		$sUrl = $sParamGet ? "$sUrl?$sParamGet" : $sUrl;
-		$sUrl = trim($sUrl, '/-');
-		return $mFullUrlScheme . $sUrl;
+		$url = $paramGet ? $url . '?' . $paramGet : $url;
+		$url = trim($url, '/-');
+		return $fullUrlScheme . $url;
 	}
-
 }
