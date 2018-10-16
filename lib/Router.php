@@ -430,8 +430,8 @@ class Router
 	public function getBaseUrl(string $sheme = 'auto'): string
 	{
 		# Self detect
-		if($sheme === '1' || $sheme === 'auto') {
-			return $this->getHttpMode() . '://' . $this->HTTP_HOST;
+		if($sheme === 'auto') {
+			return ($this->getHttpMode() ? $this->getHttpMode() . '://' : '') . $this->HTTP_HOST;
 		}
 		# Automatic
 		elseif($sheme === '//') {
@@ -443,7 +443,7 @@ class Router
 			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->HTTP_HOST : $this->HTTP_HOST;
 		}
 	}
-	
+
 	/**
 	 * FORCE HOST
 	 *
@@ -452,7 +452,7 @@ class Router
 	 */
 	public function forceHost(string $host): Router
 	{
-		$this->HTTP_HOST = $host;
+		$this->HTTP_HOST = (string) preg_replace('`^('.implode('|', self::REQUEST_SCHEME).')://`', '', $host);
 		return $this;
 	}
 
@@ -464,7 +464,7 @@ class Router
 	 */
 	public function forceSheme(string $sheme): Router
 	{
-		$this->REQUEST_SCHEME = $sheme;
+		$this->REQUEST_SCHEME = in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme : '';
 		return $this;
 	}
 
