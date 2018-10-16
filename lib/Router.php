@@ -440,7 +440,7 @@ class Router
 		# User set
 		else {
 			$sheme = rtrim(strtolower($sheme), '/ ');
-			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->HTTP_HOST : $sheme;
+			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->HTTP_HOST : $this->HTTP_HOST;
 		}
 	}
 	
