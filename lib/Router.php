@@ -2,6 +2,7 @@
 namespace Coercive\Utility\Router;
 
 use Exception;
+use Coercive\Security\Xss\XssUrl;
 use Coercive\Utility\Globals\Globals;
 use Coercive\Utility\Router\Exception\RouterException;
 
@@ -417,7 +418,7 @@ class Router
 	 */
 	public function getCurrentURL(bool $full = false): string
 	{
-		return htmlspecialchars($this->getRawCurrentURL($full));
+		return (new XssUrl($this->getRawCurrentURL($full)))->getFiltered();
 	}
 
 	/**
