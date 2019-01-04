@@ -39,20 +39,13 @@ class Parser {
      *
      * Destroys spaces and slashes at start and end, and all query parameters (after '?')
      *
-     * @param string $sUrl
+     * @param string $url
      * @return string
      */
-    public function clean($sUrl) {
-
-        # DELETE INTERNAL SPACES
-        while(strpos($sUrl, ' ') !== false) { $sUrl = str_replace(' ', '', $sUrl); }
-
-        # DELETE PARASITICS & SLASH
-        $sUrl = trim($sUrl, " \t\n\r\0\x0B/");
-
-        # DELETE QUERY
-        return strtok($sUrl, '?');
-
+    public function clean(string $url): string
+    {
+        $url = trim($url, " \t\n\r\0\x0B/");
+        return false !== ($pos = strpos($url, '?')) ? substr($url, 0, $pos) : $url;
     }
 
     /**
