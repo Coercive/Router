@@ -12,19 +12,19 @@ use Coercive\Utility\Router\Exception\CtrlException;
  * @link		https://github.com/Coercive/Router
  *
  * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2018 Anthony Moral
+ * @copyright   2019 Anthony Moral
  * @license 	MIT
  */
-class Ctrl {
-
+class Ctrl
+{
 	/** @var string */
 	private $defaultController = '';
 
-	/** @var string */
-	private $allowedNamespace = '';
+	/** @var array */
+	private $allowedNamespaces = [];
 
 	/** @var mixed */
-	private $App = null;
+	private $app = null;
 
 	/**
 	 * SET DEFAULT CONTROLLER (ERROR 500)
@@ -48,19 +48,38 @@ class Ctrl {
 	 */
 	public function setAllowedNamespace(string $namespace): Ctrl
 	{
-		$this->allowedNamespace = $namespace;
+		if($namespace) {
+			$this->allowedNamespaces[sha1($namespace)] = $namespace;
+		}
+		return $this;
+	}
+
+	/**
+	 * SET ALLOWED NAMESPACES
+	 *
+	 * Verify if multiples namespaces start with this allowed path
+	 *
+	 * @param string[] $namespaces
+	 * @return Ctrl
+	 */
+	public function setAllowedNamespaces(array $namespaces): Ctrl
+	{
+		foreach ($namespaces as $namespace) {
+			if(!$namespace || !is_string($namespace)) { continue; }
+			$this->allowedNamespaces[sha1($namespace)] = $namespace;
+		}
 		return $this;
 	}
 
 	/**
 	 * SET APP TO INJECT
 	 *
-	 * @param mixed $App
+	 * @param mixed $app
 	 * @return Ctrl
 	 */
-	public function setApp($App): Ctrl
+	public function setApp($app): Ctrl
 	{
-		$this->App = $App;
+		$this->app = $app;
 		return $this;
 	}
 
@@ -92,8 +111,10 @@ class Ctrl {
 		$method = $matches['method'] ?? '';
 
 		# Verify allowed
-		if($this->allowedNamespace && 0 !== strpos($controller, $this->allowedNamespace)) {
-			throw new CtrlException(CtrlException::NAMESPACE_NOT_ALLOWED . $class);
+		foreach ($this->allowedNamespaces as $namespace) {
+			if($namespace && 0 !== strpos($controller, $namespace)) {
+				throw new CtrlException(CtrlException::NAMESPACE_NOT_ALLOWED . $class);
+			}
 		}
 
 		# Not callable : 500
