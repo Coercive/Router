@@ -126,8 +126,8 @@ class Ctrl
 		}
 
 		# Call
-		if($this->App) {
-			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}($this->App) : (new $controller($this->App))->{$method}($this->App);
+		if($this->app) {
+			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}($this->app) : (new $controller($this->app))->{$method}($this->app);
 		}
 		else {
 			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}() : (new $controller())->{$method}();
