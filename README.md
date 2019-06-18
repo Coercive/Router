@@ -263,6 +263,37 @@ Switch Language
 
 ```
 
+Switch
+------
+```php
+#
+# Switch params for the current url
+#
+    # SEARCH example
+    # /search-article?q=hello&page=1
+
+    // Rewrite only the page in french
+    $oRouter->switch('FR', [], ['page' => 2]);
+
+        /* /recherche-un-article?q=hello&page=2 */
+
+ 	# BLOG example
+    # /article-42?option=pdf&page=2
+
+	// Rewrite id in same lang
+    $oRouter->switch('', ['id' => 55]);
+
+        /* /article-55?option=pdf&page=2 */
+		
+	// Delete specific query item
+    $oRouter->switch('', [], ['option' => null]);
+
+        /* /article-42?page=2 */
+
+# etc...
+
+```
+
 Build URL
 ---------
 ```php
