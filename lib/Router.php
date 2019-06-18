@@ -560,6 +560,49 @@ class Router
 	}
 
 	/**
+	 * Give actual url (or in other lang) and replace rewrite and get params
+	 *
+	 * @param string $lang
+	 * @param array $rewrite
+	 * @param array $get
+	 * @param bool $full [optional]
+	 * @return string
+	 * @throws Exception
+	 */
+	public function switch(string $lang, array $rewrite, array $get, bool $full = false): string
+	{
+		# Current language if not set
+		if(!$lang) { $lang = $this->lang; }
+
+		# Current url or in other lang
+		if(!$this->id || !isset($this->routes[$this->id])) { return ''; }
+		if(!in_array($lang, $this->routes[$this->id]['langs'])) { return ''; }
+		$url = $this->routes[$this->id]['routes'][$lang]['rewrite'];
+
+		# Query params (delete null values)
+		$data = array_replace($this->queryParamsGet, $get);
+		$data = array_filter($data, function ($v) { return null !== $v; } );
+		$query = !$data ? '' : http_build_query($data);
+
+		# Rewrite params
+		if($this->routeParamsGet) {
+			$data = $this->routeParamsGet;
+			if(isset($this->overloadedRouteParams[$lang])) {
+				$data = array_replace($data, $this->overloadedRouteParams[$lang]);
+			}
+			$data = array_replace($data, $rewrite);
+			$url = $this->rewriteUrl($this->id, $lang, $params);
+		}
+
+		# Delete lost params
+		$url = $this->_oParser->deleteLostParams($url);
+
+		# Recompose url
+		$url = trim($query ? $url . '?' . $query : $url, '/-');
+		return $full ? $this->getBaseUrl() . '/' . $url : $url;
+	}
+
+	/**
 	 * URL FABRIC
 	 *
 	 * @param string $id
