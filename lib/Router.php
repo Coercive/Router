@@ -418,7 +418,7 @@ class Router
 	 */
 	public function getCurrentURL(bool $full = false): string
 	{
-		return (new XssUrl($this->getRawCurrentURL($full)))->getFiltered();
+		return (new XssUrl)->setUrl($this->getRawCurrentURL($full))->getFiltered();
 	}
 
 	/**
