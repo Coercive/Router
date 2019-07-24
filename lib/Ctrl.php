@@ -32,7 +32,7 @@ class Ctrl
 	 * @param string $default
 	 * @return Ctrl
 	 */
-    public function setDefault(string $default): Ctrl
+	public function setDefault(string $default): Ctrl
 	{
 		$this->defaultController = $default;
 		return $this;
@@ -125,12 +125,42 @@ class Ctrl
 			return $this->load($this->defaultController);
 		}
 
-		# Call
-		if($this->app) {
-			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}($this->app) : (new $controller($this->app))->{$method}($this->app);
+		# Detect if required App parameter
+		$reflection = new ReflectionMethod($controller, $method);
+		$methodExpectedApp = false;
+		if($this->app && $reflection->getNumberOfParameters()) {
+			foreach ($reflection->getParameters() as $parameter) {
+				if ($parameter->getName() === 'app') {
+					$methodExpectedApp = true;
+				}
+				break;
+			}
 		}
+
+		# Call static
+		if($reflection->isStatic()) {
+			return $methodExpectedApp ? $controller::{$method}($this->app) : $controller::{$method}();
+		}
+
+		# Call instantiate
 		else {
-			return (new ReflectionMethod($controller, $method))->isStatic() ? $controller::{$method}() : (new $controller())->{$method}();
+			# Detect if constructor required App parameter
+			$constructorExpectedApp = false;
+			if($this->app) {
+				$constructor = $reflection->getDeclaringClass()->getConstructor();
+				if ($constructor && $constructor->getNumberOfParameters()) {
+					foreach ($constructor->getParameters() as $parameter) {
+						if ($parameter->getName() === 'app') {
+							$constructorExpectedApp = true;
+						}
+						break;
+					}
+				}
+			}
+
+			# Load with or without app
+			$ctrl = $constructorExpectedApp ? new $controller($this->app) : new $controller();
+			return $methodExpectedApp ? $ctrl->{$method}($this->app) : $ctrl->{$method}();
 		}
 	}
 }
