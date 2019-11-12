@@ -3,7 +3,6 @@ namespace Coercive\Utility\Router;
 
 use Exception;
 use Coercive\Security\Xss\XssUrl;
-use Coercive\Utility\Globals\Globals;
 use Coercive\Utility\Router\Exception\RouterException;
 
 /**
@@ -33,9 +32,6 @@ class Router
 		$REQUEST_METHOD,
 		$REQUEST_URI,
 		$QUERY_STRING;
-
-	/** @var Globals */
-	private $Globals = null;
 
 	/** @var Parser */
 	private $_oParser = null;
@@ -232,7 +228,6 @@ class Router
 		# Bind user routes
 		$this->_oParser = $parser;
 		$this->routes = $parser->get();
-		$this->Globals = new Globals;
 
 		# INPUT SERVER
 		$this->initInputServer();
