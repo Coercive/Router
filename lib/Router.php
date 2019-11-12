@@ -169,17 +169,6 @@ class Router
 	}
 
 	/**
-	 * INIT SUPER GLOBAL $_GET MERGE
-	 *
-	 * @return void
-	 */
-	private function filterParams()
-	{
-		$this->queryParamsGet = $this->Globals->autoFilterManualVar($this->queryParamsGet);
-		$this->routeParamsGet = $this->Globals->autoFilterManualVar($this->routeParamsGet);
-	}
-
-	/**
 	 * REWRITE URL WITH PARAMS
 	 *
 	 * @param string $id
@@ -259,9 +248,6 @@ class Router
 
 		# RUN
 		$this->run();
-
-		# FILTER
-		$this->filterParams();
 	}
 
 	/**
