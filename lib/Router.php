@@ -173,11 +173,10 @@ class Router
 	 *
 	 * @return void
 	 */
-	private function initSuperGlobalGET()
+	private function filterParams()
 	{
 		$this->queryParamsGet = $this->Globals->autoFilterManualVar($this->queryParamsGet);
 		$this->routeParamsGet = $this->Globals->autoFilterManualVar($this->routeParamsGet);
-		$_GET = array_replace_recursive([], $_GET, $this->queryParamsGet, $this->routeParamsGet);
 	}
 
 	/**
@@ -261,8 +260,8 @@ class Router
 		# RUN
 		$this->run();
 
-		# SET _GET
-		$this->initSuperGlobalGET();
+		# FILTER
+		$this->filterParams();
 	}
 
 	/**
