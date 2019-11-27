@@ -475,6 +475,17 @@ class Router
 	}
 
 	/**
+	 * INIT SUPER GLOBAL $_GET MERGE
+	 *
+	 * @return Router
+	 */
+	public function overloadGET(): Router
+	{
+		$_GET = array_replace_recursive([], $_GET, $this->queryParamsGet, $this->routeParamsGet);
+		return $this;
+	}
+
+	/**
 	 * TRANSLATE PARAM FOR URL SWITCH
 	 *
 	 * @param array $list
