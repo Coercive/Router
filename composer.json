@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
+        "php": ">=7",
         "symfony/yaml": "^2",
         "coercive/xss": "^0.0.7",
         "coercive/globals": "^1"
