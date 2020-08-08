@@ -3,7 +3,7 @@ namespace Coercive\Utility\Router;
 
 use Exception;
 use Coercive\Security\Xss\XssUrl;
-use Coercive\Utility\Router\Exception\RouterException;
+use Coercive\Utility\Router\Entity\Route;
 
 /**
  * Router
@@ -11,12 +11,12 @@ use Coercive\Utility\Router\Exception\RouterException;
  * La simplicité est la sophistication suprême.
  * Léonard de Vinci
  *
- * @package		Coercive\Utility\Router
- * @link		https://github.com/Coercive/Router
+ * @package Coercive\Utility\Router
+ * @link https://github.com/Coercive/Router
  *
- * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2018 Anthony Moral
- * @license 	MIT
+ * @author Anthony Moral <contact@coercive.fr>
+ * @copyright 2020
+ * @license MIT
  */
 class Router
 {
@@ -65,6 +65,9 @@ class Router
 
 	/** @var string request type accepted */
 	private $httpAccept = '';
+
+	/** @var Exception[] */
+	private $exceptions = [];
 
 	/**
 	 * INIT INPUT SERVER
@@ -126,21 +129,13 @@ class Router
 	 * Start process : launch of routes detection
 	 *
 	 * @return void
-	 * @throws RouterException
+	 * @throws Exception
 	 */
 	private function run()
 	{
-		# SECURITY
-		if(!$this->routes) { throw new RouterException('Router cant start. No routes avialable.'); }
-
-		# PREPARE EACH ROUTE
 		foreach($this->routes as $id => $item) {
-
-			# EACH LANGUAGE
 			foreach($item['routes'] as $lang => $datas) {
-
-				# MATCH
-				if($this->match($datas['regex'])) {
+				if($this->match($datas['regex'], $datas['methods'])) {
 					$this->id = $id;
 					$this->lang = $lang;
 					$this->ctrl = $item['controller'];
@@ -154,66 +149,30 @@ class Router
 	 * MATCH URL / ROUTE
 	 *
 	 * @param string $pattern
+	 * @param array $methods
 	 * @return bool
 	 */
-	private function match(string $pattern): bool
+	private function match(string $pattern, array $methods): bool
 	{
-		if(!preg_match("`^$pattern$`i", $this->url, $matches)) { return false; }
+		if($methods && !in_array($this->getMethod(), $methods)) {
+			return false;
+		}
+		if(!preg_match("`^$pattern$`i", $this->url, $matches)) {
+			return false;
+		}
 		$intKeys = array_filter(array_keys($matches), 'is_numeric');
 		$this->routeParamsGet = array_diff_key($matches, array_flip($intKeys));
 		return true;
 	}
 
 	/**
-	 * REWRITE URL WITH PARAMS
-	 *
-	 * @param string $id
-	 * @param string $lang
-	 * @param array $injectedParams
-	 * @return string
-	 * @throws RouterException
+	 * @param Exception $e
+	 * @return $this
 	 */
-	private function rewriteUrl(string $id, string $lang, array $injectedParams): string
+	private function addException(Exception $e): Router
 	{
-		# Original url to rewrite
-		$url = $this->routes[$id]['routes'][$lang]['original'];
-
-		# Rewrite params if needed
-		foreach ($this->routes[$id]['routes'][$lang]['params'] as $key => $param) {
-
-			# EXIST
-			if (isset($injectedParams[$param['name']]) && !is_bool($injectedParams[$param['name']]) && '' !== $injectedParams[$param['name']]) {
-
-				# PARAM VAUE
-				$value = $injectedParams[$param['name']];
-				if(!preg_match("`^$param[regex]$`i", $value)) {
-					throw new RouterException("Route param regex not match : $param[name], regex : $param[regex], value : $value");
-				}
-
-				# TRIM OPTIONAL BRACKETS
-				if($param['optional']) {
-					$url = str_replace($param['optional'], trim($param['optional'], '[]'), $url);
-				}
-
-				# INJECT PARAM
-				$url = str_replace($param['subject'], $value, $url);
-			}
-
-			# OPTIONAL EMPTY PARAM
-			elseif(!empty($param['optional'])) {
-				$url = str_replace($param['optional'], '', $url);
-				continue;
-			}
-
-			# FORGOTTEN PARAM
-			else {
-				throw new RouterException("Route required param not found for rewrite url : $param[name]");
-			}
-
-		}
-
-		# Builded url
-		return $url;
+		$this->exceptions[] = $e;
+		return $this;
 	}
 
 	/**
@@ -239,10 +198,18 @@ class Router
 		$this->initQueryString();
 
 		# URL
-		$this->url = $parser->clean($this->REQUEST_URI);
+		$this->url = Parser::clean($this->REQUEST_URI);
 
 		# RUN
 		$this->run();
+	}
+
+	/**
+	 * @return Exception[]
+	 */
+	public function getException(): array
+	{
+		return $this->exceptions;
 	}
 
 	/**
@@ -290,7 +257,7 @@ class Router
 	 *
 	 * @return string
 	 */
-	public function getAccessMode(): string
+	public function getMethod(): string
 	{
 		return $this->REQUEST_METHOD;
 	}
@@ -300,7 +267,7 @@ class Router
 	 *
 	 * @return string
 	 */
-	public function getHttpMode(): string
+	public function getProtocol(): string
 	{
 		return $this->REQUEST_SCHEME;
 	}
@@ -411,7 +378,7 @@ class Router
 	{
 		# Self detect
 		if($sheme === 'auto') {
-			return ($this->getHttpMode() ? $this->getHttpMode() . '://' : '') . $this->HTTP_HOST;
+			return ($this->getProtocol() ? $this->getProtocol() . '://' : '') . $this->HTTP_HOST;
 		}
 		# Automatic
 		elseif($sheme === '//') {
@@ -493,11 +460,9 @@ class Router
 	 */
 	public function overloadParams(array $list): Router
 	{
-		if($list && is_array($list)) {
-			foreach($list as $lang => $params) {
-				foreach($params as $id => $param) {
-					$this->overloadedRouteParams[$lang][$id] = urlencode($param);
-				}
+		foreach($list as $lang => $params) {
+			foreach($params as $id => $param) {
+				$this->overloadedRouteParams[$lang][$id] = urlencode($param);
 			}
 		}
 		return $this;
@@ -524,30 +489,27 @@ class Router
 	 */
 	public function switchLang(string $lang, bool $full = false): string
 	{
-		# REQUESTED URL
-		if(!$this->id || !isset($this->routes[$this->id])) { return ''; }
-		if(!in_array($lang, $this->routes[$this->id]['langs'])) { return ''; }
-		$url = $this->routes[$this->id]['routes'][$lang]['rewrite'];
+		# Load entity
+		$lang = $lang ?: $this->lang;
+		$route = new Route($lang, $this->routes[$this->id] ?? []);
+		$route->setQueryParams($this->queryParamsGet);
+		$route->setFullScheme($full);
+		$route->setBaseUrl($this->getBaseUrl());
 
-		# PARAM GET
-		$paramGet = empty($this->queryParamsGet) ? '' : http_build_query($this->queryParamsGet);
-
-		# REWRITE PARAM GET
-		if($this->routeParamsGet) {
-			$params = $this->routeParamsGet;
+		# Rewrite params (with overload if setted)
+		if($data = $this->routeParamsGet) {
 			if(isset($this->overloadedRouteParams[$lang])) {
-				$params = array_replace_recursive($params, $this->overloadedRouteParams[$lang]);
+				$data = array_replace_recursive($data, $this->overloadedRouteParams[$lang]);
 			}
-			$url = $this->rewriteUrl($this->id, $lang, $params);
 		}
+		$route->setRewriteParams($data);
 
-		# DELETE LOST PARAMS
-		$url = $this->_oParser->deleteLostParams($url);
-
-		# RECOMPOSED URL
-		$url = $paramGet ? $url . '?' . $paramGet : $url;
-		$url = trim($url, '/-');
-		return $full ? $this->getBaseUrl() . '/' . $url : $url;
+		# Handle errors
+		$url = $route->getUrl();
+		foreach ($route->getExceptions() as $e) {
+			$this->addException($e);
+		}
+		return $url;
 	}
 
 	/**
@@ -562,76 +524,72 @@ class Router
 	 */
 	public function switch(string $lang, array $rewrite, array $get, bool $full = false): string
 	{
-		# Current language if not set
-		if(!$lang) { $lang = $this->lang; }
-
-		# Current url or in other lang
-		if(!$this->id || !isset($this->routes[$this->id])) { return ''; }
-		if(!in_array($lang, $this->routes[$this->id]['langs'])) { return ''; }
-		$url = $this->routes[$this->id]['routes'][$lang]['rewrite'];
+		# Load entity
+		$lang = $lang ?: $this->lang;
+		$route = new Route($lang, $this->routes[$this->id] ?? []);
+		$route->setFullScheme($full);
+		$route->setBaseUrl($this->getBaseUrl());
 
 		# Query params (delete null values)
 		$data = array_replace($this->queryParamsGet, $get);
 		$data = array_filter($data, function ($v) { return null !== $v; } );
-		$query = !$data ? '' : http_build_query($data);
+		$route->setQueryParams($data);
 
-		# Rewrite params
-		if($this->routeParamsGet) {
-			$data = $this->routeParamsGet;
+		# Rewrite params (with overload and current if setted)
+		if($data = $this->routeParamsGet) {
 			if(isset($this->overloadedRouteParams[$lang])) {
 				$data = array_replace($data, $this->overloadedRouteParams[$lang]);
 			}
 			$data = array_replace($data, $rewrite);
-			$url = $this->rewriteUrl($this->id, $lang, $params);
 		}
+		$route->setRewriteParams($data);
 
-		# Delete lost params
-		$url = $this->_oParser->deleteLostParams($url);
-
-		# Recompose url
-		$url = trim($query ? $url . '?' . $query : $url, '/-');
-		return $full ? $this->getBaseUrl() . '/' . $url : $url;
+		# Handle errors
+		$url = $route->getUrl();
+		foreach ($route->getExceptions() as $e) {
+			$this->addException($e);
+		}
+		return $url;
 	}
 
 	/**
-	 * URL FABRIC
+	 * Url fabric
 	 *
 	 * @param string $id
 	 * @param string $lang [optional]
-	 * @param array $rewriteParams [optional]
-	 * @param array $queryParams [optional]
-	 * @param mixed $fullUrlScheme [optional] (http, https, auto, true)
+	 * @param array $rewrite [optional]
+	 * @param array $get [optional]
+	 * @param bool $full [optional]
 	 * @return string
 	 * @throws Exception
 	 */
-	public function url(string $id, string $lang = '', array $rewriteParams = [], array $queryParams = [], $fullUrlScheme = ''): string
+	public function url(string $id, string $lang = '', array $rewrite = [], array $get = [], bool $full = false): string
 	{
-		# AUTO LANG
-		if(!$lang) { $lang = $this->lang; }
-
-		# REQUESTED URL
-		if(!isset($this->routes[$id]['langs']) || !in_array($lang, $this->routes[$id]['langs'])) { return ''; }
-		$url = $this->routes[$id]['routes'][$lang]['rewrite'];
-
-		# PARAM GET
-		$paramGet = $queryParams ? http_build_query($queryParams) : '';
-
-		# REWRITE PARAM
-		if($rewriteParams && is_array($rewriteParams)) {
-			$url = $this->rewriteUrl($id, $lang, $rewriteParams);
+		$lang = $lang ?: $this->lang;
+		$route = new Route($lang, $this->routes[$id] ?? []);
+		$route->setQueryParams($get);
+		$route->setRewriteParams($rewrite);
+		$route->setFullScheme($full);
+		$route->setBaseUrl($this->getBaseUrl());
+		$url = $route->getUrl();
+		foreach ($route->getExceptions() as $e) {
+			$this->addException($e);
 		}
+		return $url;
+	}
 
-		# FULL SCHEME
-		if($fullUrlScheme) {
-			$fullUrlScheme = $this->getBaseUrl() . '/';
-		}
-
-		# DELETE LOST PARAMS
-		$url = $this->_oParser->deleteLostParams($url);
-
-		# RECOMPOSED URL
-		$url = $paramGet ? $url . '?' . $paramGet : $url;
-		$url = trim($url, '/-');
-		return $fullUrlScheme . $url;
+	/**
+	 * Get Route
+	 *
+	 * @param string $id
+	 * @param string $lang
+	 * @return Route
+	 */
+	public function route(string $id, string $lang = ''): Route
+	{
+		$lang = $lang ?: $this->lang;
+		$route = new Route($lang, $this->routes[$id] ?? []);
+		$route->setBaseUrl($this->getBaseUrl());
+		return $route;
 	}
 }

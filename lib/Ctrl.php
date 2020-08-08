@@ -1,19 +1,19 @@
 <?php
 namespace Coercive\Utility\Router;
 
+use Exception;
 use ReflectionMethod;
 use ReflectionException;
-use Coercive\Utility\Router\Exception\CtrlException;
 
 /**
  * Ctrl
  *
- * @package		Coercive\Utility\Router
- * @link		https://github.com/Coercive/Router
+ * @package Coercive\Utility\Router
+ * @link https://github.com/Coercive/Router
  *
- * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   2019 Anthony Moral
- * @license 	MIT
+ * @author Anthony Moral <contact@coercive.fr>
+ * @copyright 2020
+ * @license MIT
  */
 class Ctrl
 {
@@ -88,7 +88,7 @@ class Ctrl
 	 *
 	 * @param string $class : ProjectCode\Controller::Method
 	 * @return mixed
-	 * @throws CtrlException
+	 * @throws Exception
 	 * @throws ReflectionException
 	 */
 	public function load(string $class)
@@ -96,14 +96,14 @@ class Ctrl
 		# No controller
 		if(!$class) {
 			if(!$this->defaultController) {
-				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $class);
+				throw new Exception('CtrlException : Can\'t load default ctrl ' . $class);
 			}
 			return $this->load($this->defaultController);
 		}
 
 		# Verify Path
 		if(!preg_match('`^(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $class, $matches)) {
-			throw new CtrlException(CtrlException::CONTROLLER_PATTERN_ERROR . $class);
+			throw new Exception('CtrlException : Pattern don\'t match ' . $class);
 		}
 
 		# Bind
@@ -113,14 +113,14 @@ class Ctrl
 		# Verify allowed
 		foreach ($this->allowedNamespaces as $namespace) {
 			if($namespace && 0 !== strpos($controller, $namespace)) {
-				throw new CtrlException(CtrlException::NAMESPACE_NOT_ALLOWED . $class);
+				throw new Exception('CtrlException : Namespace is not allowed ' . $class);
 			}
 		}
 
 		# Not callable : 500
 		if(!is_callable([$controller, $method])) {
 			if($class === $this->defaultController || !$this->defaultController) {
-				throw new CtrlException(CtrlException::DEFAULT_CONTROLLER_ERROR . $class);
+				throw new Exception('CtrlException : Can\'t load default ctrl ' . $class);
 			}
 			return $this->load($this->defaultController);
 		}

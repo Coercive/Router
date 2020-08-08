@@ -1,148 +1,151 @@
 <?php
 namespace Coercive\Utility\Router;
 
-use Coercive\Utility\Router\Exception\LoaderException;
+use Exception;
 use Symfony\Component\Yaml\Parser as YamlParser;
 
 /**
  * Loader
  *
- * @package		Coercive\Utility\Router
- * @link		https://github.com/Coercive/Router
+ * @package Coercive\Utility\Router
+ * @link https://github.com/Coercive/Router
  *
- * @author  	Anthony Moral <contact@coercive.fr>
- * @copyright   (c) 2016 - 2018 Anthony Moral
- * @license 	http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
+ * @author Anthony Moral <contact@coercive.fr>
+ * @copyright 2020
+ * @license MIT
  */
-class Loader {
-
+class Loader
+{
 	/**
 	 * CACHE ARRAY
 	 *
-	 * @param array $aCachedRoutes
+	 * @param array $data
 	 * @return Router
-	 * @throws LoaderException
+	 * @throws Exception
 	 */
-	static public function loadByCache($aCachedRoutes) {
-
+	static public function loadByCache(array $data): Router
+	{
 		# SKIP ON ERROR
-		if(!$aCachedRoutes || !is_array($aCachedRoutes)) { throw new LoaderException('Cached Routes empty or not array'); }
+		if(!$data) {
+			throw new Exception('Cached Routes empty');
+		}
 
 		# LOAD ROUTER
-		$oParser = new Parser;
-		$oParser->setFromCache($aCachedRoutes);
-		return new Router($oParser);
+		$parser = new Parser;
+		$parser->setFromCache($data);
+		return new Router($parser);
 	}
 
 	/**
 	 * ARRAY
 	 *
-	 * @param array $aRoutes
-	 * @param string $sBasePath [optional]
+	 * @param array $routes
+	 * @param string $basepath [optional]
 	 * @return Router
-	 * @throws LoaderException
+	 * @throws Exception
 	 */
-	static public function loadByArray($aRoutes, $sBasePath = '') {
-
+	static public function loadByArray(array $routes, string $basepath = ''): Router
+	{
 		# SKIP ON ERROR
-		if(!$aRoutes || !is_array($aRoutes)) { throw new LoaderException('Routes empty or not array'); }
+		if(!$routes) {
+			throw new Exception('Routes empty or not array');
+		}
 
 		# LOAD ROUTER
-		$oParser = new Parser;
-		$oParser->addRoutes($aRoutes);
-		$oParser->setBasePath($sBasePath);
-		return new Router($oParser);
+		$parser = new Parser;
+		$parser->addRoutes($routes);
+		$parser->setBasePath($basepath);
+		return new Router($parser);
 	}
 
 	/**
 	 * YAML FILES
 	 *
-	 * @param mixed $mYamlFilePathList List of files paths
-	 * @param string $sBasePath [optional]
+	 * @param array $paths List of yaml files paths
+	 * @param string $basepath [optional]
 	 * @return Router
-	 * @throws LoaderException
+	 * @throws Exception
 	 */
-	static public function loadByYaml($mYamlFilePathList, $sBasePath = '') {
+	static public function loadByYaml(array $paths, string $basepath = ''): Router
+	{
+		# Skip on error
+		if(!$paths) {
+			throw new Exception('No Yaml files found');
+		}
 
-		# SKIP ON ERROR
-		if(!$mYamlFilePathList) { throw new LoaderException('No Yaml files found'); }
-
-		# ARRAY
-		if(is_string($mYamlFilePathList)) { $mYamlFilePathList = [$mYamlFilePathList]; }
-
-		# PREPARE ROUTES
-		$aRoutes = [];
-		$oYamlParser = new YamlParser;
-		foreach ($mYamlFilePathList as $mPrefix => $sYamlFilePath) {
+		# Prepare routes
+		$routes = [];
+		$parser = new YamlParser;
+		foreach ($paths as $prefix => $path) {
 
 			# No File : Skip
-			if(!file_exists($sYamlFilePath)) { throw new LoaderException('File does not exist'); }
+			if(!is_file($path)) {
+				throw new Exception('File does not exist');
+			}
 
 			# Parse
-			$aCurrentYaml = $oYamlParser->parse(file_get_contents($sYamlFilePath));
-			if(empty($aCurrentYaml) || !is_array($aCurrentYaml)) { continue; }
+			$yaml = $parser->parse(file_get_contents($path));
+			if(!$yaml) {
+				continue;
+			}
 
 			# Add prefix
-			if(!is_numeric($mPrefix)) {
-				$aNew = [];
-				foreach ($aCurrentYaml as $sKey => $aContent) {
-					$aNew[$mPrefix.$sKey] = $aContent;
+			if(!is_numeric($prefix)) {
+				$prefixed = [];
+				foreach ($yaml as $id => $params) {
+					$prefixed[$prefix.$id] = $params;
 				}
-				$aCurrentYaml = $aNew;
+				$yaml = $prefixed;
 			}
 
 			# Merge
-			$aRoutes = array_merge_recursive($aRoutes, $aCurrentYaml);
+			$routes = array_merge_recursive($routes, $yaml);
 		}
-
-		# LOAD ROUTER
-		return self::loadByArray($aRoutes, $sBasePath);
-
+		return self::loadByArray($routes, $basepath);
 	}
 
 	/**
 	 * JSON FILES
 	 *
-	 * @param mixed $mJsonFilePathList List of files paths
-	 * @param string $sBasePath [optional]
+	 * @param array $paths List of json files paths
+	 * @param string $basepath [optional]
 	 * @return Router
-	 * @throws LoaderException
+	 * @throws Exception
 	 */
-	static public function loadByJson($mJsonFilePathList, $sBasePath = '') {
-
+	static public function loadByJson(array $paths, string $basepath = ''): Router
+	{
 		# SKIP ON ERROR
-		if(!$mJsonFilePathList) { throw new LoaderException('No Json files found'); }
-
-		# ARRAY
-		if(is_string($mJsonFilePathList)) { $mJsonFilePathList = [$mJsonFilePathList]; }
+		if(!$paths) {
+			throw new Exception('No Json files found');
+		}
 
 		# PREPARE ROUTES
-		$aRoutes = [];
-		foreach ($mJsonFilePathList as $mPrefix => $sJsonFilePath) {
+		$routes = [];
+		foreach ($paths as $prefix => $path) {
 
 			# No File : Skip
-			if(!file_exists($sJsonFilePath)) { throw new LoaderException('File does not exist'); }
+			if(!is_file($path)) {
+				throw new Exception('File does not exist');
+			}
 
 			# Parse
-			$aCurrentJson = json_decode(file_get_contents($sJsonFilePath));
-			if(empty($aCurrentJson) || !is_array($aCurrentJson)) { continue; }
+			$json = json_decode(file_get_contents($path));
+			if(!$json || !is_array($json)) {
+				continue;
+			}
 
 			# Add prefix
-			if(!is_numeric($mPrefix)) {
-				$aNew = [];
-				foreach ($aCurrentJson as $sKey => $aContent) {
-					$aNew[$mPrefix.$sKey] = $aContent;
+			if(!is_numeric($prefix)) {
+				$prefixed = [];
+				foreach ($json as $id => $params) {
+					$prefixed[$prefix.$id] = $params;
 				}
-				$aCurrentJson = $aNew;
+				$json = $prefixed;
 			}
 
 			# Merge
-			$aRoutes = array_merge_recursive($aRoutes, $aCurrentJson);
+			$routes = array_merge_recursive($routes, $json);
 		}
-
-		# LOAD ROUTER
-		return self::loadByArray($aRoutes, $sBasePath);
-
+		return self::loadByArray($routes, $basepath);
 	}
-
 }
