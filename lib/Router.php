@@ -133,7 +133,6 @@ class Router
 	 * Start process : launch of routes detection
 	 *
 	 * @return void
-	 * @throws Exception
 	 */
 	private function run()
 	{
@@ -513,7 +512,6 @@ class Router
 	 * @param string $lang
 	 * @param bool $full [optional]
 	 * @return Route
-	 * @throws Exception
 	 */
 	public function switchLang(string $lang, bool $full = false): Route
 	{
@@ -541,7 +539,6 @@ class Router
 	 * @param array $get
 	 * @param bool $full [optional]
 	 * @return Route
-	 * @throws Exception
 	 */
 	public function switch(string $lang, array $rewrite, array $get, bool $full = false): Route
 	{
@@ -574,7 +571,6 @@ class Router
 	 * @param array $get [optional]
 	 * @param bool $full [optional]
 	 * @return Route
-	 * @throws Exception
 	 */
 	public function url(string $id, string $lang = '', array $rewrite = [], array $get = [], bool $full = false): Route
 	{
