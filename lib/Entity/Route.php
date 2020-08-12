@@ -1,8 +1,9 @@
 <?php
 namespace Coercive\Utility\Router\Entity;
 
-use Coercive\Utility\Router\Parser;
+use Closure;
 use Exception;
+use Coercive\Utility\Router\Parser;
 
 /**
  * Class Route
@@ -42,6 +43,9 @@ class Route
 
 	/** @var Exception[] */
 	private $exceptions = [];
+
+	/** @var Closure customer debug function that get Exception as parameter like : function(Exception $e) { ... } */
+	private $debug = null;
 
 	/**
 	 * Route accessor : original path
@@ -122,12 +126,17 @@ class Route
 	}
 
 	/**
+	 * Add Exception for external debug handler
+	 *
 	 * @param Exception $e
 	 * @return $this
 	 */
 	private function addException(Exception $e): Route
 	{
 		$this->exceptions[] = $e;
+		if(null !== $this->debug) {
+			($this->debug)($e);
+		}
 		return $this;
 	}
 
@@ -145,6 +154,43 @@ class Route
 		# Récupération automatique depuis le build
 		$this->id = strval($route['id'] ?? '');
 		$this->controller = strval($route['controller'] ?? '');
+	}
+
+	/**
+	 * Set a debug function
+	 *
+	 * It will log all given exceptions like :
+	 * function(Exception $e) { ... }
+	 *
+	 * Can be reset with give no parameter
+	 *
+	 * @param Closure|null $function
+	 * @return $this
+	 */
+	public function debug(Closure $function = null): Route
+	{
+		$this->debug = $function;
+		return $this;
+	}
+
+	/**
+	 * Some errors
+	 *
+	 * @return bool
+	 */
+	public function hasErrors(): bool
+	{
+		return (bool) $this->exceptions;
+	}
+
+	/**
+	 * Export errors
+	 *
+	 * @return Exception[]
+	 */
+	public function getExceptions(): array
+	{
+		return $this->exceptions;
 	}
 
 	/**
@@ -308,26 +354,6 @@ class Route
 	{
 		$this->full = $status;
 		return $this;
-	}
-
-	/**
-	 * Some errors
-	 *
-	 * @return bool
-	 */
-	public function hasErrors(): bool
-	{
-		return (bool) $this->exceptions;
-	}
-
-	/**
-	 * Export errors
-	 *
-	 * @return Exception[]
-	 */
-	public function getExceptions(): array
-	{
-		return $this->exceptions;
 	}
 
 	/**

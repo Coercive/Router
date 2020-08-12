@@ -1,6 +1,7 @@
 <?php
 namespace Coercive\Utility\Router;
 
+use Closure;
 use Exception;
 use Coercive\Security\Xss\XssUrl;
 use Coercive\Utility\Router\Entity\Route;
@@ -68,6 +69,9 @@ class Router
 
 	/** @var Exception[] */
 	private $exceptions = [];
+
+	/** @var Closure customer debug function that get Exception as parameter like : function(Exception $e) { ... } */
+	private $debug = null;
 
 	/**
 	 * INIT INPUT SERVER
@@ -166,12 +170,17 @@ class Router
 	}
 
 	/**
+	 * Add Exception for external debug handler
+	 *
 	 * @param Exception $e
 	 * @return $this
 	 */
 	private function addException(Exception $e): Router
 	{
 		$this->exceptions[] = $e;
+		if(null !== $this->debug) {
+			($this->debug)($e);
+		}
 		return $this;
 	}
 
@@ -205,9 +214,28 @@ class Router
 	}
 
 	/**
+	 * Set a debug function
+	 *
+	 * It will log all given exceptions like :
+	 * function(Exception $e) { ... }
+	 *
+	 * Can be reset with give no parameter
+	 *
+	 * @param Closure|null $function
+	 * @return $this
+	 */
+	public function debug(Closure $function = null): Router
+	{
+		$this->debug = $function;
+		return $this;
+	}
+
+	/**
+	 * Get Exception list for external debug
+	 *
 	 * @return Exception[]
 	 */
-	public function getException(): array
+	public function getExceptions(): array
 	{
 		return $this->exceptions;
 	}
@@ -484,14 +512,13 @@ class Router
 	 *
 	 * @param string $lang
 	 * @param bool $full [optional]
-	 * @return string
+	 * @return Route
 	 * @throws Exception
 	 */
-	public function switchLang(string $lang, bool $full = false): string
+	public function switchLang(string $lang, bool $full = false): Route
 	{
 		# Load entity
-		$lang = $lang ?: $this->lang;
-		$route = new Route($lang, $this->routes[$this->id] ?? []);
+		$route = $this->route($this->id, $lang);
 		$route->setQueryParams($this->queryParamsGet);
 		$route->setFullScheme($full);
 		$route->setBaseUrl($this->getBaseUrl());
@@ -503,13 +530,7 @@ class Router
 			}
 		}
 		$route->setRewriteParams($data);
-
-		# Handle errors
-		$url = $route->getUrl();
-		foreach ($route->getExceptions() as $e) {
-			$this->addException($e);
-		}
-		return $url;
+		return $route;
 	}
 
 	/**
@@ -519,16 +540,14 @@ class Router
 	 * @param array $rewrite
 	 * @param array $get
 	 * @param bool $full [optional]
-	 * @return string
+	 * @return Route
 	 * @throws Exception
 	 */
-	public function switch(string $lang, array $rewrite, array $get, bool $full = false): string
+	public function switch(string $lang, array $rewrite, array $get, bool $full = false): Route
 	{
 		# Load entity
-		$lang = $lang ?: $this->lang;
-		$route = new Route($lang, $this->routes[$this->id] ?? []);
+		$route = $this->route($this->id, $lang);
 		$route->setFullScheme($full);
-		$route->setBaseUrl($this->getBaseUrl());
 
 		# Query params (delete null values)
 		$data = array_replace($this->queryParamsGet, $get);
@@ -543,13 +562,7 @@ class Router
 			$data = array_replace($data, $rewrite);
 		}
 		$route->setRewriteParams($data);
-
-		# Handle errors
-		$url = $route->getUrl();
-		foreach ($route->getExceptions() as $e) {
-			$this->addException($e);
-		}
-		return $url;
+		return $route;
 	}
 
 	/**
@@ -560,22 +573,16 @@ class Router
 	 * @param array $rewrite [optional]
 	 * @param array $get [optional]
 	 * @param bool $full [optional]
-	 * @return string
+	 * @return Route
 	 * @throws Exception
 	 */
-	public function url(string $id, string $lang = '', array $rewrite = [], array $get = [], bool $full = false): string
+	public function url(string $id, string $lang = '', array $rewrite = [], array $get = [], bool $full = false): Route
 	{
-		$lang = $lang ?: $this->lang;
-		$route = new Route($lang, $this->routes[$id] ?? []);
+		$route = $this->route($id, $lang);
 		$route->setQueryParams($get);
 		$route->setRewriteParams($rewrite);
 		$route->setFullScheme($full);
-		$route->setBaseUrl($this->getBaseUrl());
-		$url = $route->getUrl();
-		foreach ($route->getExceptions() as $e) {
-			$this->addException($e);
-		}
-		return $url;
+		return $route;
 	}
 
 	/**
@@ -589,6 +596,7 @@ class Router
 	{
 		$lang = $lang ?: $this->lang;
 		$route = new Route($lang, $this->routes[$id] ?? []);
+		$route->debug($this->debug);
 		$route->setBaseUrl($this->getBaseUrl());
 		return $route;
 	}
