@@ -95,7 +95,8 @@ class Route
 
 				# Check value format
 				if(!preg_match("`^$param[regex]$`i", $value)) {
-					$this->exceptions[] = new Exception("Route param regex not match, name: $param[name], regex: $param[regex], value: $value, lang: {$this->lang}, id: {$this->id}");
+					$e = new Exception("Route param regex not match, name: $param[name], regex: $param[regex], value: $value, lang: {$this->lang}, id: {$this->id}");
+					$this->addException($e);
 					return '';
 				}
 
@@ -116,7 +117,8 @@ class Route
 
 			# Error : forgotten param
 			else {
-				$this->exceptions[] = new Exception("Route required param not found for rewrite url : $param[name], lang: {$this->lang}, id: {$this->id}");
+				$e = new Exception("Route required param not found for rewrite url : $param[name], lang: {$this->lang}, id: {$this->id}");
+				$this->addException($e);
 				return '';
 			}
 		}
@@ -212,7 +214,8 @@ class Route
 	{
 		# No route given for this language
 		if(!in_array($this->lang, $this->route['langs'] ?? [])) {
-			$this->exceptions[] = new Exception('No route defined for language "' . $this->lang . '" for id ' . $this->id);
+			$e = new Exception('No route defined for language "' . $this->lang . '" for id ' . $this->id);
+			$this->addException($e);
 			return '';
 		}
 
