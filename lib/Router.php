@@ -139,7 +139,7 @@ class Router
 	{
 		foreach($this->routes as $id => $item) {
 			foreach($item['routes'] as $lang => $datas) {
-				if($this->match($datas['regex'], $datas['methods'])) {
+				if($this->match($datas['regex'], $item['methods'])) {
 					$this->id = $id;
 					$this->lang = $lang;
 					$this->ctrl = $item['controller'];
