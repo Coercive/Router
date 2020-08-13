@@ -145,16 +145,17 @@ class Route
 	/**
 	 * Route constructor.
 	 *
+	 * @param string $id
 	 * @param string $lang
 	 * @param array $route
 	 */
-	public function __construct(string $lang, array $route)
+	public function __construct(string $id, string $lang, array $route)
 	{
+		$this->id = $id;
 		$this->lang = $lang;
 		$this->route = $route;
 
 		# Récupération automatique depuis le build
-		$this->id = strval($route['id'] ?? '');
 		$this->controller = strval($route['controller'] ?? '');
 	}
 

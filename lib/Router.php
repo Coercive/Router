@@ -591,7 +591,7 @@ class Router
 	public function route(string $id, string $lang = ''): Route
 	{
 		$lang = $lang ?: $this->lang;
-		$route = new Route($lang, $this->routes[$id] ?? []);
+		$route = new Route($id, $lang, $this->routes[$id] ?? []);
 		$route->debug($this->debug);
 		$route->setBaseUrl($this->getBaseUrl());
 		return $route;
