@@ -251,16 +251,16 @@ class Parser
             # Add each language
             foreach($routes as $lang => $route) {
 
-                # DETECT CONTROLLER ENTRY
-                if($lang === $this->controller) {
-                	continue;
-                }
+				# Exclude controller / options entry
+				if($lang === $this->controller || $lang === $this->options) {
+					continue;
+				}
 
-                # CLEAN
+                # Clean routes
                 $path = Parser::clean($route);
                 $path = $path ? ($basepath ? $basepath . '/' : '') . $path : $basepath;
 
-                # PREPARE PROPERTIES
+                # Prepare properties
                 $this->routes[$id]['langs'][] = $lang;
                 $this->routes[$id]['routes'][$lang]['lang'] = $lang;
                 $this->routes[$id]['routes'][$lang]['original'] = $path;
