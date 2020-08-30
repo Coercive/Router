@@ -213,6 +213,11 @@ class Route
 	 */
 	public function getUrl(): string
 	{
+		# Empty / no route / default object
+		if(!$this->id) {
+			return '';
+		}
+
 		# No route given for this language
 		if(!in_array($this->lang, $this->route['langs'] ?? [])) {
 			$e = new Exception('No route defined for language "' . $this->lang . '" for id ' . $this->id);
@@ -336,6 +341,23 @@ class Route
 	{
 		$this->queries = $data;
 		return $this;
+	}
+
+	/**
+	 * Auto retrieve param
+	 *
+	 * @param string $name
+	 * @return mixed
+	 */
+	public function getParam(string $name)
+	{
+		if(isset($this->rewrites[$name])) {
+			return $this->rewrites[$name];
+		}
+		if(isset($this->queries[$name])) {
+			return $this->queries[$name];
+		}
+		return null;
 	}
 
 	/**

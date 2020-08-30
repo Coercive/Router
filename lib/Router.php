@@ -52,14 +52,8 @@ class Router
 	/** @var array Overload params for switch url lang */
 	private $overloadedRouteParams = [];
 
-	/** @var string Current matched route ID */
-	private $id = '';
-
-	/** @var string Current matched route LANG */
-	private $lang = '';
-
-	/** @var string Current matched route CONTROLLER */
-	private $ctrl = '';
+	/** @var null */
+	private $current = null;
 
 	/** @var bool is an ajax request */
 	private $ajax = false;
@@ -139,9 +133,11 @@ class Router
 		foreach($this->routes as $id => $item) {
 			foreach($item['routes'] as $lang => $datas) {
 				if($this->match($datas['regex'], $item['methods'])) {
-					$this->id = $id;
-					$this->lang = $lang;
-					$this->ctrl = $item['controller'];
+					$this->current = new Route($id, $lang, $item);
+					$this->current->debug($this->debug);
+					$this->current->setBaseUrl($this->getBaseUrl());
+					$this->current->setRewriteParams($this->routeParamsGet);
+					$this->current->setQueryParams($this->queryParamsGet);
 					return;
 				}
 			}
@@ -195,6 +191,7 @@ class Router
 		# Bind user routes
 		$this->_oParser = $parser;
 		$this->routes = $parser->get();
+		$this->current = new Route('', '', []);
 
 		# INPUT SERVER
 		$this->initInputServer();
@@ -240,33 +237,11 @@ class Router
 	}
 
 	/**
-	 * THE ID OF THE CURRENT ROUTE
-	 *
-	 * @return string
+	 * @return Route
 	 */
-	public function getId(): string
+	public function current(): Route
 	{
-		return $this->id;
-	}
-
-	/**
-	 * THE LANGUAGE OF THE CURRENT ROUTE
-	 *
-	 * @return string
-	 */
-	public function getLang(): string
-	{
-		return $this->lang;
-	}
-
-	/**
-	 * THE CONTROLLER OF THE CURRENT ROUTE
-	 *
-	 * @return string
-	 */
-	public function getController(): string
-	{
-		return $this->ctrl;
+		return $this->current;
 	}
 
 	/**
@@ -297,16 +272,6 @@ class Router
 	public function getProtocol(): string
 	{
 		return $this->REQUEST_SCHEME;
-	}
-
-	/**
-	 * ROUTE PARAMS
-	 *
-	 * @return array
-	 */
-	public function getCurrentRouteParams(): array
-	{
-		return $this->routeParamsGet;
 	}
 
 	/**
@@ -368,7 +333,7 @@ class Router
 	 *
 	 * @return array
 	 */
-	public function getPreparedRoutesForCache(): array
+	public function export(): array
 	{
 		return $this->routes;
 	}
@@ -443,32 +408,6 @@ class Router
 	}
 
 	/**
-	 * FORCE LANGUAGE
-	 *
-	 * @param string $lang
-	 * @return $this
-	 */
-	public function forceLang(string $lang): Router
-	{
-		$this->lang = $lang;
-		return $this;
-	}
-
-	/**
-	 * FORCE GET PARAM EXIST
-	 *
-	 * @param array $list
-	 * @return $this
-	 */
-	public function forceExistGET(array $list): Router
-	{
-		foreach ($list as $name) {
-			if(!isset($_GET[$name])) { $_GET[$name] = null; }
-		}
-		return $this;
-	}
-
-	/**
 	 * INIT SUPER GLOBAL $_GET MERGE
 	 *
 	 * @return Router
@@ -516,7 +455,7 @@ class Router
 	public function switchLang(string $lang, bool $full = false): Route
 	{
 		# Load entity
-		$route = $this->route($this->id, $lang);
+		$route = $this->route($this->current->getId(), $lang);
 		$route->setQueryParams($this->queryParamsGet);
 		$route->setFullScheme($full);
 		$route->setBaseUrl($this->getBaseUrl());
@@ -543,7 +482,7 @@ class Router
 	public function switch(string $lang, array $rewrite, array $get, bool $full = false): Route
 	{
 		# Load entity
-		$route = $this->route($this->id, $lang);
+		$route = $this->route($this->current->getId(), $lang);
 		$route->setFullScheme($full);
 
 		# Query params (delete null values)
@@ -590,7 +529,7 @@ class Router
 	 */
 	public function route(string $id, string $lang = ''): Route
 	{
-		$lang = $lang ?: $this->lang;
+		$lang = $lang ?: $this->current->getLang();
 		$route = new Route($id, $lang, $this->routes[$id] ?? []);
 		$route->debug($this->debug);
 		$route->setBaseUrl($this->getBaseUrl());
