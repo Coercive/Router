@@ -34,9 +34,6 @@ class Router
 		$REQUEST_URI,
 		$QUERY_STRING;
 
-	/** @var Parser */
-	private $_oParser = null;
-
 	/** @var array From Parser */
 	private $routes = [];
 
@@ -189,7 +186,6 @@ class Router
 	public function __construct(Parser $parser)
 	{
 		# Bind user routes
-		$this->_oParser = $parser;
 		$this->routes = $parser->get();
 		$this->current = new Route('', '', []);
 
