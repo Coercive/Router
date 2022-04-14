@@ -390,7 +390,7 @@ class Route
 	 */
 	public function getOptions(): array
 	{
-		return $this->route['routes'][$this->lang]['options'] ?? [];
+		return $this->route['options'] ?? [];
 	}
 
 	/**
@@ -401,6 +401,6 @@ class Route
 	 */
 	public function getOption(string $name)
 	{
-		return $this->route['routes'][$this->lang]['options'][$name] ?? null;
+		return $this->route['options'][$name] ?? null;
 	}
 }
