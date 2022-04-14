@@ -32,6 +32,8 @@ BLOG:
     __: Projet\Controller::Method
     FR: /{slug}/article-{nb:[0-9]{3}}[/{test:@[a-z]+}]
     EN: /{slug}/post-{nb:[0-9]{3}}[/{test:@[a-z]+}]
+    options:
+        example: 'Hello World.'
 
 ###########################
 
@@ -142,8 +144,26 @@ Basic Functions
 # Important
 #
     // Get ID : (example : INDEX)
-    $oRouter->getId()
-    
+    $oRouter->current()->getId()
+
+    // Get LANG : (example : EN)
+    $oRouter->current()->getLang()
+
+    // Get Controller : (example : Projet\Controller::Method)
+    $oRouter->current()->getController()
+
+    // Get ALL Options : (array)
+    $oRouter->current()->getOptions()
+
+    // Get ONE Option : (example on BLOG route)
+    $oRouter->current()->getOption('example')
+
+    // Force LANG : (example : EN)
+    // If your process requires it, you can change the internal language
+    // For example : when no route founded for current uri (404)
+    $oRouter->current()->setLang('EN')
+    // or you can set a default lang in the constructor for the empty route)
+
     // Get HOST : (example : www.my-website.test)
     $oRouter->getHost()
 
@@ -152,27 +172,14 @@ Basic Functions
     // Useful for url builder
     $oRouter->forceHost('www.my-new-domaine-name.test')
 
-    // Get LANG : (example : EN)
-    $oRouter->getLang()
-
-    // Force LANG : (example : EN)
-    // If your process requires it, you can change the internal language
-    $oRouter->forceLang('EN')
-
-    // Get Controller : (example : Projet\Controller::Method)
-    $oRouter->getController()
-
 #
 # Util methods :
 #
     // Get Access Mode : (example : GET, POST ...)
-    $oRouter->getAccessMode()
+    $oRouter->getMethod()
 
     // Get HTTP Mode : (http / https)
-    $oRouter->getHttpMode()
-
-    // Get the current matched path : (example : /{slug}/article-{nb:[0-9]{3}}[/{test:@[a-z]+}])
-    $oRouter->getNoRewritedMatchedPath()
+    $oRouter->getProtocol()
 
     // Detect ajax request
     $oRouter->isAjaxRequest()
@@ -184,13 +191,11 @@ Basic Functions
     $oRouter->getHttpAccept()
 
     // Get current url
-    $oRouter->getCurrentURL()
+    $oRouter->getCurrentURL() // xss filtered
+    $oRouter->getRawCurrentURL() // raw
 
     // Get server doc_root
     $oRouter->getServerRootPath()
-
-    // Get the translated route params (array)
-    $oRouter->getTranslateRouteParams()
 ```
 
 Switch Language
@@ -298,7 +303,7 @@ Build URL
 ---------
 ```php
 #
-# BASIC ROUTE
+# BASIC URL
 #
 $oRouter->url('HOME') // current language
 $oRouter->url('HOME', null) // current language
@@ -324,11 +329,27 @@ $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'ht
 # ftp://www.my-web-site.com/example-fabric-url/article-100
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'ftp')
 
-# http://custom-domain.com/example-fabric-url/article-100
-$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'http://custom-domain.com')
+# https://custom-domain.com/example-fabric-url/article-100
+$oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], null, 'https://custom-domain.com')
 
 # example-fabric-url/article-100?param1=test1&param2=test2
 $oRouter->url('BLOG', 'FR', ['slug'=>'example-fabric-url', 'nb'=>100], ['param1'=>'test1', 'param2'=>'test2'])
+
+#
+# With Route object
+#
+echo $oRouter->route('BLOG', 'FR')
+    ->setRewriteParams([
+        'slug'=>'example-fabric-url',
+         'nb'=>100
+     ])
+     ->setQueryParams([
+        'param1'=>'test1',
+        'param2'=>'test2'
+    ])
+    ->setBaseUrl('https://custom-domain.com')
+    ->setFullScheme(true)
+;
 ```
 
 Load Controller

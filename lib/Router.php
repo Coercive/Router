@@ -16,7 +16,7 @@ use Coercive\Utility\Router\Entity\Route;
  * @link https://github.com/Coercive/Router
  *
  * @author Anthony Moral <contact@coercive.fr>
- * @copyright 2020
+ * @copyright 2022
  * @license MIT
  */
 class Router
@@ -25,44 +25,43 @@ class Router
 		'http', 'https', 'ftp'
 	];
 
-	/** @var string INPUT_SERVER */
-	private
-		$REQUEST_SCHEME,
-		$DOCUMENT_ROOT,
-		$HTTP_HOST,
-		$REQUEST_METHOD,
-		$REQUEST_URI,
-		$QUERY_STRING;
+	/** @var string from INPUT_SERVER data */
+	private string $REQUEST_SCHEME;
+	private string $DOCUMENT_ROOT;
+	private string $HTTP_HOST;
+	private string $REQUEST_METHOD;
+	private string $REQUEST_URI;
+	private string $QUERY_STRING;
 
 	/** @var array From Parser */
-	private $routes = [];
+	private array $routes;
 
 	/** @var string Current URI */
-	private $url = null;
+	private string $url;
 
 	/** @var array Not rewritten GET params (after '?' in url) */
-	private $queryParamsGet = [];
+	private array $queryParamsGet = [];
 
 	/** @var array Rewritten route GET params */
-	private $routeParamsGet = [];
+	private array $routeParamsGet = [];
 
 	/** @var array Overload params for switch url lang */
-	private $overloadedRouteParams = [];
+	private array $overloadedRouteParams = [];
 
-	/** @var null */
-	private $current = null;
+	/** @var Route The current detected route for current url */
+	private Route $current;
 
-	/** @var bool is an ajax request */
-	private $ajax = false;
+	/** @var bool is an ajax request based on HTTP_X_REQUESTED_WITH */
+	private bool $ajax = false;
 
 	/** @var string request type accepted */
-	private $httpAccept = '';
+	private string $httpAccept = '';
 
-	/** @var Exception[] */
-	private $exceptions = [];
+	/** @var Exception[] list of errors throwed in process */
+	private array $exceptions = [];
 
-	/** @var Closure customer debug function that get Exception as parameter like : function(Exception $e) { ... } */
-	private $debug = null;
+	/** @var Closure|null customer debug function that get Exception as parameter like : function(Exception $e) { ... } */
+	private ? Closure $debug = null;
 
 	/**
 	 * INIT INPUT SERVER
@@ -180,28 +179,35 @@ class Router
 	 * Coercive Router constructor.
 	 *
 	 * @param Parser $parser
+	 * @param string $defaultLang [optional]
 	 * @return void
-	 * @throws Exception
 	 */
-	public function __construct(Parser $parser)
+	public function __construct(Parser $parser, string $defaultLang = '')
 	{
-		# Bind user routes
-		$this->routes = $parser->get();
-		$this->current = new Route('', '', []);
+		# Default empty route
+		$this->current = new Route('', $defaultLang, []);
 
-		# INPUT SERVER
+		# Bind user routes
+		try {
+			$this->routes = $parser->get();
+		}
+		catch (Exception $e) {
+			$this->addException($e);
+		}
+
+		# Init input server data
 		$this->initInputServer();
 
-		# AJAX
+		# Init ajax detection from input server
 		$this->initAjaxDetection();
 
-		# PARAMS GET
+		# Init uri params get
 		$this->initQueryString();
 
-		# URL
+		# Save current cleaned url
 		$this->url = Parser::clean($this->REQUEST_URI);
 
-		# RUN
+		# Start route processing
 		$this->run();
 	}
 
@@ -233,6 +239,8 @@ class Router
 	}
 
 	/**
+	 * The current detected route for current url
+	 *
 	 * @return Route
 	 */
 	public function current(): Route
@@ -293,7 +301,7 @@ class Router
 	/**
 	 * SET CUSTOM AJAX RESQUEST MODE
 	 *
-	 * @param $status
+	 * @param bool $status
 	 * @return $this
 	 */
 	public function setAjaxRequest(bool $status): Router

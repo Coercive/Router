@@ -1,7 +1,7 @@
 {
     "name": "coercive/router",
     "type": "library",
-    "description": "Coercive Utility Router",
+    "description": "Coercive Utility Multilingual Yaml Router",
     "homepage": "http://coercive.fr",
     "license": "MIT",
     "licenses": [{
@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "php": ">=7",
+        "php": ">=7.4",
         "symfony/yaml": "^2",
         "coercive/xss": "^0.0.7",
         "coercive/globals": "^1"

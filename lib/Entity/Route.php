@@ -2,8 +2,8 @@
 namespace Coercive\Utility\Router\Entity;
 
 use Closure;
-use Exception;
 use Coercive\Utility\Router\Parser;
+use Exception;
 
 /**
  * Class Route
@@ -12,40 +12,40 @@ use Coercive\Utility\Router\Parser;
  * @link https://github.com/Coercive/Router
  *
  * @author Anthony Moral <contact@coercive.fr>
- * @copyright 2020
+ * @copyright 2022
  * @license MIT
  */
 class Route
 {
 	/** @var string Route ID */
-	private $id;
+	private string $id;
 
 	/** @var string Targeted language */
-	private $lang;
+	private string $lang;
 
 	/** @var string Targeted controller */
-	private $controller;
+	private string $controller;
 
 	/** @var array Parameters to rewrite */
-	private $rewrites = [];
+	private array $rewrites = [];
 
 	/** @var array Query parameters (not rewritten) */
-	private $queries = [];
+	private array $queries = [];
 
 	/** @var bool Fullscheme Url */
-	private $full = false;
+	private bool $full = false;
 
-	/** @var array */
-	private $route;
+	/** @var array Route raw data */
+	private array $route;
 
 	/** @var string */
-	private $baseUrl = '';
+	private string $baseUrl = '';
 
 	/** @var Exception[] */
-	private $exceptions = [];
+	private array $exceptions = [];
 
-	/** @var Closure customer debug function that get Exception as parameter like : function(Exception $e) { ... } */
-	private $debug = null;
+	/** @var Closure|null customer debug function that get Exception as parameter like : function(Exception $e) { ... } */
+	private ? Closure $debug = null;
 
 	/**
 	 * Route accessor : original path
@@ -148,6 +148,7 @@ class Route
 	 * @param string $id
 	 * @param string $lang
 	 * @param array $route
+	 * @return void
 	 */
 	public function __construct(string $id, string $lang, array $route)
 	{
