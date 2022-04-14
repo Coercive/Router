@@ -39,12 +39,6 @@ class Router
 	/** @var string Current URI */
 	private string $url;
 
-	/** @var array Not rewritten GET params (after '?' in url) */
-	private array $queryParamsGet = [];
-
-	/** @var array Rewritten route GET params */
-	private array $routeParamsGet = [];
-
 	/** @var array Overload params for switch url lang */
 	private array $overloadedRouteParams = [];
 
@@ -82,18 +76,6 @@ class Router
 	}
 
 	/**
-	 * INIT PARAM QUERY STRING
-	 *
-	 * @return void
-	 */
-	private function initQueryString()
-	{
-		# Array of params
-		parse_str($this->QUERY_STRING, $array);
-		$this->queryParamsGet = $array;
-	}
-
-	/**
 	 * INIT AJAX REQUEST DETECTION
 	 *
 	 * @return void
@@ -117,47 +99,6 @@ class Router
 		else {
 			$this->httpAccept = 'html';
 		}
-	}
-
-	/**
-	 * Start process : launch of routes detection
-	 *
-	 * @return void
-	 */
-	private function run()
-	{
-		foreach($this->routes as $id => $item) {
-			foreach($item['routes'] as $lang => $datas) {
-				if($this->match($datas['regex'], $item['methods'])) {
-					$this->current = new Route($id, $lang, $item);
-					$this->current->debug($this->debug);
-					$this->current->setBaseUrl($this->getBaseUrl());
-					$this->current->setRewriteParams($this->routeParamsGet);
-					$this->current->setQueryParams($this->queryParamsGet);
-					return;
-				}
-			}
-		}
-	}
-
-	/**
-	 * MATCH URL / ROUTE
-	 *
-	 * @param string $pattern
-	 * @param array $methods
-	 * @return bool
-	 */
-	private function match(string $pattern, array $methods): bool
-	{
-		if($methods && !in_array($this->getMethod(), $methods)) {
-			return false;
-		}
-		if(!preg_match("`^$pattern$`i", $this->url, $matches)) {
-			return false;
-		}
-		$intKeys = array_filter(array_keys($matches), 'is_numeric');
-		$this->routeParamsGet = array_diff_key($matches, array_flip($intKeys));
-		return true;
 	}
 
 	/**
@@ -194,21 +135,28 @@ class Router
 		catch (Exception $e) {
 			$this->addException($e);
 		}
+	}
 
+	/**
+	 * Start process : launch of routes detection
+	 *
+	 * @return $this
+	 */
+	public function run(): Router
+	{
 		# Init input server data
 		$this->initInputServer();
 
 		# Init ajax detection from input server
 		$this->initAjaxDetection();
 
-		# Init uri params get
-		$this->initQueryString();
-
-		# Save current cleaned url
-		$this->url = Parser::clean($this->REQUEST_URI);
-
 		# Start route processing
-		$this->run();
+		$route = $this->find($this->REQUEST_URI);
+		if($route->getId()) {
+			$this->current = $route;
+			$this->current->setQueryParams(Parser::queryParams($this->QUERY_STRING));
+		}
+		return $this;
 	}
 
 	/**
@@ -418,7 +366,7 @@ class Router
 	 */
 	public function overloadGET(): Router
 	{
-		$_GET = array_replace_recursive([], $_GET, $this->queryParamsGet, $this->routeParamsGet);
+		$_GET = array_replace_recursive([], $_GET, $this->current->getQueryParams(), $this->current->getRewriteParams());
 		return $this;
 	}
 
@@ -450,6 +398,51 @@ class Router
 	}
 
 	/**
+	 * Search route from input url
+	 *
+	 * @param string $url
+	 * @return Route
+	 */
+	public function find(string $url): Route
+	{
+		# Filter get parameter
+		$queryParamsGet = Parser::queryParams($url, true);
+
+		# Clean input url
+		$url = Parser::clean($url);
+
+		# Compare with all routes
+		$route = null;
+		foreach($this->routes as $id => $item) {
+			foreach($item['routes'] as $lang => $datas) {
+
+				# Comparison of access methods.
+				if($item['methods'] && !in_array($this->getMethod(), $item['methods'])) {
+					continue;
+				}
+
+				# Match route and retrieve parameters
+				if(!preg_match("`^$datas[regex]$`i", $url, $matches)) {
+					continue;
+				}
+
+				# Filter rewritten parameters
+				$intKeys = array_filter(array_keys($matches), 'is_numeric');
+				$routeParamsGet = array_diff_key($matches, array_flip($intKeys));
+
+				# Prepare route
+				$route = new Route($id, $lang, $item);
+				$route->debug($this->debug);
+				$route->setBaseUrl($this->getBaseUrl());
+				$route->setRewriteParams($routeParamsGet);
+				$route->setQueryParams($queryParamsGet);
+				break;
+			}
+		}
+		return null === $route ? new Route('', '', []) : $route;
+	}
+
+	/**
 	 * GIVE ACTUAL URL IN OTHER LANG
 	 *
 	 * @param string $lang
@@ -460,12 +453,12 @@ class Router
 	{
 		# Load entity
 		$route = $this->route($this->current->getId(), $lang);
-		$route->setQueryParams($this->queryParamsGet);
+		$route->setQueryParams($this->current->getQueryParams());
 		$route->setFullScheme($full);
 		$route->setBaseUrl($this->getBaseUrl());
 
 		# Rewrite params (with overload if setted)
-		if($data = $this->routeParamsGet) {
+		if($data = $this->current->getRewriteParams()) {
 			if(isset($this->overloadedRouteParams[$lang])) {
 				$data = array_replace_recursive($data, $this->overloadedRouteParams[$lang]);
 			}
@@ -490,12 +483,12 @@ class Router
 		$route->setFullScheme($full);
 
 		# Query params (delete null values)
-		$data = array_replace($this->queryParamsGet, $get);
+		$data = array_replace($this->current->getQueryParams(), $get);
 		$data = array_filter($data, function ($v) { return null !== $v; } );
 		$route->setQueryParams($data);
 
 		# Rewrite params (with overload and current if setted)
-		if($data = $this->routeParamsGet) {
+		if($data = $this->current->getRewriteParams()) {
 			if(isset($this->overloadedRouteParams[$lang])) {
 				$data = array_replace($data, $this->overloadedRouteParams[$lang]);
 			}

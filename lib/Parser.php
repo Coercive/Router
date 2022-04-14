@@ -55,6 +55,7 @@ class Parser
      */
     static public function clean(string $url): string
     {
+		$url = parse_url($url)['path'] ?? '';
         $url = trim($url, " \t\n\r\0\x0B/");
         return false !== ($pos = strpos($url, '?')) ? substr($url, 0, $pos) : $url;
     }
@@ -69,6 +70,25 @@ class Parser
 	{
         return (string) preg_replace(self::REGEX_LOST_OPTION, '', preg_replace(self::REGEX_PARAM, '', $url));
     }
+
+	/**
+	 * Get query params as array from query string or full url
+	 *
+	 * @param string $query
+	 * @param bool $extract [optional] Extract query string from full url
+	 * @return array
+	 */
+	static public function queryParams(string $query, bool $extract = false): array
+	{
+		if($extract) {
+			if (false === ($pos = strpos($query, '?'))) {
+				return [];
+			}
+			$query = substr($query, $pos + 1);
+		}
+		parse_str($query, $array);
+		return $array;
+	}
 
 	/**
 	 * PARSE ROUTE PARAMS

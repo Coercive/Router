@@ -137,11 +137,20 @@ $oRouter = Loader::loadByYaml([
 
 ```
 
+Start the router
+----------------
+When config is loaded, start the router if you wan't to handle current route.
+```php
+<?php
+# Start
+$oRouter->run();
+```
+
 Basic Functions
 ---------------
 ```php
 #
-# Important
+# Important: don't forget to start the router before use current route...
 #
     // Get ID : (example : INDEX)
     $oRouter->current()->getId()
