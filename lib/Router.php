@@ -405,6 +405,13 @@ class Router
 	 */
 	public function find(string $url): Route
 	{
+		static $multiton = [];
+		$hash = sha1($url);
+		if(array_key_exists($hash, $multiton)) {
+			error_log(print_r('ROUTER > Multiton loader : ' . $url, true));
+			return $multiton[$hash];
+		}
+
 		# Filter get parameter
 		$queryParamsGet = Parser::queryParams($url, true);
 
@@ -439,7 +446,9 @@ class Router
 				break;
 			}
 		}
-		return null === $route ? new Route('', '', []) : $route;
+
+		# Memorizes in multiton and return loaded or empty route
+		return $multiton[$hash] = null === $route ? new Route('', '', []) : $route;
 	}
 
 	/**
