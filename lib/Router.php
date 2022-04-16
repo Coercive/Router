@@ -33,6 +33,11 @@ class Router
 	private string $REQUEST_URI;
 	private string $QUERY_STRING;
 
+	/** @var Route[][]  */
+	private array $multiton = [
+		'find' => []
+	];
+
 	/** @var array From Parser */
 	private array $routes;
 
@@ -402,10 +407,9 @@ class Router
 	 */
 	public function find(string $url): Route
 	{
-		static $multiton = [];
 		$hash = sha1($url);
-		if(array_key_exists($hash, $multiton)) {
-			return $multiton[$hash];
+		if(array_key_exists($hash, $this->multiton['find'])) {
+			return $this->multiton['find'][$hash];
 		}
 
 		# Filter get parameter
@@ -444,7 +448,7 @@ class Router
 		}
 
 		# Memorizes in multiton and return loaded or empty route
-		return $multiton[$hash] = null === $route ? new Route('', '', []) : $route;
+		return $this->multiton['find'][$hash] = null === $route ? new Route('', '', []) : $route;
 	}
 
 	/**
