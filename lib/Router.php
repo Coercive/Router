@@ -36,9 +36,6 @@ class Router
 	/** @var array From Parser */
 	private array $routes;
 
-	/** @var string Current URI */
-	private string $url;
-
 	/** @var array Overload params for switch url lang */
 	private array $overloadedRouteParams = [];
 
