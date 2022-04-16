@@ -408,7 +408,6 @@ class Router
 		static $multiton = [];
 		$hash = sha1($url);
 		if(array_key_exists($hash, $multiton)) {
-			error_log(print_r('ROUTER > Multiton loader : ' . $url, true));
 			return $multiton[$hash];
 		}
 
