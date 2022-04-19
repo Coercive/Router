@@ -265,7 +265,7 @@ class Parser
             # Prepare methods
             $this->routes[$id]['methods'] = [];
             if($methods = $routes[$this->options][$this->methods] ?? '') {
-				$this->routes[$id]['methods'] = explode(' ', $methods);
+				$this->routes[$id]['methods'] = explode(' ', strtoupper($methods));
 			}
 
             # Add each language
