@@ -2,6 +2,7 @@
 namespace Coercive\Utility\Router;
 
 use Closure;
+use Coercive\Utility\Router\Entity\Filter;
 use Exception;
 use Coercive\Security\Xss\XssUrl;
 use Coercive\Utility\Router\Entity\Route;
@@ -542,5 +543,57 @@ class Router
 		$route->debug($this->debug);
 		$route->setBaseUrl($this->getBaseUrl());
 		return $route;
+	}
+
+	/**
+	 * Search routes from options field
+	 *
+	 * @param Filter $filter
+	 * @return Route[]
+	 */
+	public function filter(Filter $filter): array
+	{
+		$filters = $filter->export();
+		$lang = $filters['lang'] ?: $this->current->getLang();
+
+		# Compare with all routes
+		$routes = [];
+		foreach($this->routes as $id => $item) {
+
+			# Check access method
+			if($filters['methods']) {
+				$founded = false;
+				foreach($filters['methods'] as $method) {
+					if(in_array($filters['methods'], $item['methods'])) {
+						$founded = true;
+					}
+				}
+				if(!$founded) {
+					continue;
+				}
+			}
+
+			# Check options
+			foreach ($filters['options'] as $option) {
+				$el = $item['options'][$option['label']] ?? null;
+				if(null === $el) {
+					continue 2;
+				}
+				if(is_array($el)) {
+					continue 2;
+				}
+				settype($el, $option['type']);
+				if($el !== $option['value']) {
+					continue 2;
+				}
+			}
+
+			# Prepare route
+			$route = new Route($id, $lang, $item);
+			$route->debug($this->debug);
+			$route->setBaseUrl($this->getBaseUrl());
+			$routes[] = $route;
+		}
+		return $routes;
 	}
 }

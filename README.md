@@ -361,6 +361,33 @@ echo $oRouter->route('BLOG', 'FR')
 ;
 ```
 
+Find
+----
+```php
+<?php
+# You may need to find a route relative to a specific url which is not the current url.
+$example_referer_url = (string) filter_input(INPUT_SERVER, 'HTTP_REFERER', FILTER_SANITIZE_STRING);
+$route = $oRouter->find($example_referer_url);
+echo $route->getId();
+```
+
+Filter
+------
+```php
+<?php
+# For this example, we use the BLOG entry in the previous sample yaml.
+#   options:
+#       example: 'Hello World.'
+$f = new Filter;
+$f->options('example', 'Hello World.', 'string'); # third parameter is optional
+
+$routes = $oRouter->filter($f);
+
+foreach ($routes as $route) {
+    echo $route->getId() . ' - ' . $route->getOption('example') . '<br>';
+}
+```
+
 Load Controller
 ---------------
 ```php
