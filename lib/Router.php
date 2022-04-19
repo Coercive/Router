@@ -421,12 +421,14 @@ class Router
 		# Compare with all routes
 		$route = null;
 		foreach($this->routes as $id => $item) {
-			foreach($item['routes'] as $lang => $datas) {
 
-				# Comparison of access methods.
-				if($item['methods'] && !in_array($this->getMethod(), $item['methods'])) {
-					continue;
-				}
+			# Comparison of access methods.
+			if($item['methods'] && !in_array($this->getMethod(), $item['methods'])) {
+				continue;
+			}
+
+			# Check by lang
+			foreach($item['routes'] as $lang => $datas) {
 
 				# Match route and retrieve parameters
 				if(!preg_match("`^$datas[regex]$`i", $url, $matches)) {
