@@ -28,22 +28,39 @@ class Parser
     const REGEX_LOST_OPTION = '`\[[^\]]*\]`';
 
     /** @var string */
-    private $controller = self::DEFAULT_CONTROLLER_LABEL;
+    private string $controller = self::DEFAULT_CONTROLLER_LABEL;
 
     /** @var string */
-    private $options = self::DEFAULT_OPTIONS_LABEL;
+    private string $options = self::DEFAULT_OPTIONS_LABEL;
 
     /** @var string */
-    private $methods = self::DEFAULT_OPTION_METHODS_LABEL;
+    private string $methods = self::DEFAULT_OPTION_METHODS_LABEL;
 
     /** @var string Additional path between the route and the domain or ip */
-    private $basepath = '';
+    private string $basepath = '';
 
     /** @var array External Source Routes */
-    private $source = [];
+    private array $source = [];
 
     /** @var array Internal Prepared Routes */
-    private $routes = [];
+    private array $routes = [];
+
+    /**
+     * URLS CLEANER
+     *
+     * Destroys spaces and slashes
+     *
+     * @param string $url
+     * @return string
+     */
+    static private function fix(string $url): string
+    {
+		# DELETE INTERNAL SPACES
+		$url = str_replace(' ', '', $url);
+
+		# DELETE PARASITICS & SLASH
+		return trim($url, " \t\n\r\0\x0B/");
+    }
 
     /**
      * URLS CLEANER
@@ -56,7 +73,7 @@ class Parser
     static public function clean(string $url): string
     {
 		$url = parse_url($url)['path'] ?? '';
-        $url = trim($url, " \t\n\r\0\x0B/");
+        $url = self::fix($url);
         return false !== ($pos = strpos($url, '?')) ? substr($url, 0, $pos) : $url;
     }
 
@@ -198,7 +215,7 @@ class Parser
      */
     public function setBasePath(string $basepath): Parser
 	{
-        $this->basepath = $basepath;
+        $this->basepath = Parser::clean($basepath);
         return $this;
     }
 
@@ -244,9 +261,6 @@ class Parser
         	throw new Exception('Parser cant start. No routes avialable.');
         }
 
-        # Prepare basepath
-        $basepath = Parser::clean($this->basepath);
-
         # Prepare each route
         foreach($this->source as $id => $routes) {
 
@@ -277,8 +291,8 @@ class Parser
 				}
 
                 # Clean routes
-                $path = Parser::clean($route);
-                $path = $path ? ($basepath ? $basepath . '/' : '') . $path : $basepath;
+                $path = Parser::fix($route);
+                $path = $path ? ($this->basepath ? $this->basepath . '/' : '') . $path : $this->basepath;
 
                 # Prepare properties
                 $this->routes[$id]['langs'][] = $lang;
