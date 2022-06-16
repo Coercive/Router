@@ -374,10 +374,10 @@ class Route
 	/**
 	 * Activate full scheme url
 	 *
-	 * @param bool $status
+	 * @param bool $status [optional]
 	 * @return $this
 	 */
-	public function setFullScheme(bool $status): Route
+	public function setFullScheme(bool $status = true): Route
 	{
 		$this->full = $status;
 		return $this;
