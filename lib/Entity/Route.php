@@ -309,6 +309,21 @@ class Route
 	}
 
 	/**
+	 * Replace rewrite url parameters
+	 *
+	 * @param array $data
+	 * @return $this
+	 */
+	public function replaceRewriteParams(array $data): Route
+	{
+		$data = array_replace($this->rewrites, $data);
+		$data = array_filter($data, function ($v) {
+			return null !== $v;
+		});
+		return $this->setRewriteParams($data);
+	}
+
+	/**
 	 * Set rewrite url parameters
 	 *
 	 * @param array $data
@@ -317,6 +332,31 @@ class Route
 	public function setRewriteParams(array $data): Route
 	{
 		$this->rewrites = $data;
+		return $this;
+	}
+
+	/**
+	 * Set one rewrite url parameter
+	 *
+	 * @param string $name
+	 * @param string $value
+	 * @return $this
+	 */
+	public function setRewriteParam(string $name, string $value): Route
+	{
+		$this->rewrites[$name] = $value;
+		return $this;
+	}
+
+	/**
+	 * Remove one rewrite url parameter
+	 *
+	 * @param string $name
+	 * @return $this
+	 */
+	public function unsetRewriteParam(string $name): Route
+	{
+		unset($this->rewrites[$name]);
 		return $this;
 	}
 
@@ -332,6 +372,21 @@ class Route
 	}
 
 	/**
+	 * Replace query url parameters
+	 *
+	 * @param array $data
+	 * @return $this
+	 */
+	public function replaceQueryParams(array $data): Route
+	{
+		$data = array_replace($this->queries, $data);
+		$data = array_filter($data, function ($v) {
+			return null !== $v;
+		});
+		return $this->setQueryParams($data);
+	}
+
+	/**
 	 * Set query url parameters
 	 * (no rewrite : after '?')
 	 *
@@ -341,6 +396,31 @@ class Route
 	public function setQueryParams(array $data): Route
 	{
 		$this->queries = $data;
+		return $this;
+	}
+
+	/**
+	 * Set one query url parameter
+	 *
+	 * @param string $name
+	 * @param string $value
+	 * @return $this
+	 */
+	public function setQueryParam(string $name, string $value): Route
+	{
+		$this->queries[$name] = $value;
+		return $this;
+	}
+
+	/**
+	 * Remove one query url parameter
+	 *
+	 * @param string $name
+	 * @return $this
+	 */
+	public function unsetQueryParam(string $name): Route
+	{
+		unset($this->queries[$name]);
 		return $this;
 	}
 
