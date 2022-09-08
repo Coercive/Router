@@ -301,7 +301,8 @@ class Router
 	 */
 	public function getRawCurrentURL(bool $full = false): string
 	{
-		return $full ? $this->getBaseUrl() . '/' . $this->REQUEST_URI : $this->REQUEST_URI;
+		$uri = '/' . $this->REQUEST_URI;
+		return $full ? $this->getBaseUrl() . $uri : $uri;
 	}
 
 	/**
