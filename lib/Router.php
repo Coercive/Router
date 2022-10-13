@@ -137,6 +137,12 @@ class Router
 		# Default empty route
 		$this->current = new Route('', $defaultLang, []);
 
+		# Init input server data
+		$this->initInputServer();
+
+		# Init ajax detection from input server
+		$this->initAjaxDetection();
+
 		# Bind user routes
 		try {
 			$this->routes = $parser->get();
@@ -153,12 +159,6 @@ class Router
 	 */
 	public function run(): Router
 	{
-		# Init input server data
-		$this->initInputServer();
-
-		# Init ajax detection from input server
-		$this->initAjaxDetection();
-
 		# Start route processing
 		$route = $this->find($this->REQUEST_URI);
 		if($route->getId()) {
