@@ -179,7 +179,18 @@ Basic Functions
     // Force HOST : (example : www.my-new-domaine-name.test)
     // If your process requires it, you can change the host name
     // Useful for url builder
-    $router->forceHost('www.my-new-domaine-name.test')
+    $router->setHost('www.my-new-domaine-name.test')
+
+    // Force SCHEME : (example : https://)
+    // If your process requires it, you can change the protocol scheme
+    // Useful for url builder
+    $router->setProtocol('//')
+
+    // To apply your new host on base url, use setBaseUrl with no param
+    $router->setBaseUrl();
+
+    // To overwrite current base url with custom one
+    $router->setBaseUrl('https://www.my-new-domaine-name.test');
 
 #
 # Util methods :
@@ -189,6 +200,12 @@ Basic Functions
 
     // Get HTTP Mode : (http / https)
     $router->getProtocol()
+
+    // Get Server Script Uri
+    $router->getScriptUri()
+
+    // Get Server Script Url
+    $router->getScriptUrl()
 
     // Detect ajax request
     $router->isAjaxRequest()

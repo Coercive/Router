@@ -45,6 +45,19 @@ class Parser
     /** @var array Internal Prepared Routes */
     private array $routes = [];
 
+	/**
+	 * VALIDATE HOST NAME
+	 *
+	 * @source Sakari A. Maaranen https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address/3824105#3824105
+	 *
+	 * @param string $host
+	 * @return string
+	 */
+	static public function validateHostName(string $host): string
+	{
+		return (255 > strlen($host) && preg_match('`^(?:[a-z\d]|[a-z\d][a-z\d-]{0,61}[a-z\d])(?:\.(?:[a-z\d]|[a-z\d][a-z\d-]{0,61}[a-z\d]))*$`i', $host));
+	}
+
     /**
      * URLS CLEANER
      *

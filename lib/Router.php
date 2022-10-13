@@ -32,7 +32,10 @@ class Router
 	private string $HTTP_HOST;
 	private string $REQUEST_METHOD;
 	private string $REQUEST_URI;
+	private string $SCRIPT_URI;
+	private string $SCRIPT_URL;
 	private string $QUERY_STRING;
+	private string $BASE_URL;
 
 	/** @var Route[][]  */
 	private array $multiton = [
@@ -75,7 +78,10 @@ class Router
 
 		# INPUT SERVER REQUEST
 		$this->REQUEST_URI = trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL)), '/');
+		$this->SCRIPT_URI = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URI', FILTER_SANITIZE_URL)), '/');
+		$this->SCRIPT_URL = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URL', FILTER_SANITIZE_URL)), '/');
 		$this->QUERY_STRING = urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL));
+		$this->setBaseUrl();
 	}
 
 	/**
@@ -294,6 +300,26 @@ class Router
 	}
 
 	/**
+	 * SERVER SCRIPT URI
+	 *
+	 * @return string
+	 */
+	public function getScriptUri(): string
+	{
+		return $this->SCRIPT_URI;
+	}
+
+	/**
+	 * SERVER SCRIPT URL
+	 *
+	 * @return string
+	 */
+	public function getScriptUrl(): string
+	{
+		return $this->SCRIPT_URL;
+	}
+
+	/**
 	 * GET RAW CURRENT URL
 	 *
 	 * @param bool $full [optional]
@@ -319,24 +345,47 @@ class Router
 	/**
 	 * GET CURRENT BASE URL
 	 *
-	 * @param string $sheme [optional]
 	 * @return string
 	 */
-	public function getBaseUrl(string $sheme = 'auto'): string
+	public function getBaseUrl(): string
 	{
-		# Self detect
-		if($sheme === 'auto') {
-			return ($this->getProtocol() ? $this->getProtocol() . '://' : '') . $this->HTTP_HOST;
+		return $this->BASE_URL;
+	}
+
+	/**
+	 * SET BASE URL
+	 *
+	 * @param string|null $custom [optional]
+	 * @return $this
+	 */
+	public function setBaseUrl(? string $custom = null): Router
+	{
+		if(null !== $custom) {
+			$this->BASE_URL = $custom;
 		}
-		# Automatic
-		elseif($sheme === '//') {
-			return '//' . $this->HTTP_HOST;
-		}
-		# User set
 		else {
-			$sheme = rtrim(strtolower($sheme), '/ ');
-			return in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme . '://' . $this->HTTP_HOST : $this->HTTP_HOST;
+			$this->BASE_URL = $this->buildBaseUrl();
 		}
+		return $this;
+	}
+
+	/**
+	 * GET CURRENT BASE URL
+	 *
+	 * @param bool $inheritProtocol [optional]
+	 * @param string|null $customProtocol [optional]
+	 * @return string
+	 */
+	public function buildBaseUrl(bool $inheritProtocol = false, ? string $customProtocol = null): string
+	{
+		$protocol = $this->getProtocol();
+		if($inheritProtocol) {
+			$protocol = '//';
+		}
+		if(null !== $customProtocol && ('//' === $customProtocol || in_array($customProtocol, self::REQUEST_SCHEME, true))) {
+			$protocol = $customProtocol;
+		}
+		return $this->BASE_URL = $protocol . ('//' === $protocol ? '' : '://') . trim($this->getHost(), '/ ');
 	}
 
 	/**
@@ -345,21 +394,31 @@ class Router
 	 * @param string $host
 	 * @return $this
 	 */
-	public function forceHost(string $host): Router
+	public function setHost(string $host): Router
 	{
-		$this->HTTP_HOST = (string) preg_replace('`^('.implode('|', self::REQUEST_SCHEME).')://`', '', $host);
+		if(false !== $pos = strpos($host, '//')) {
+			$host = substr($host, $pos + 2);
+		}
+
+		$host = trim($host, '/ ');
+
+		if(Parser::validateHostName($host)) {
+			$this->HTTP_HOST = $host;
+		}
 		return $this;
 	}
 
 	/**
-	 * FORCE SHEME
+	 * FORCE PROTOCOL
 	 *
 	 * @param string $sheme
 	 * @return $this
 	 */
-	public function forceSheme(string $sheme): Router
+	public function setProtocol(string $sheme): Router
 	{
-		$this->REQUEST_SCHEME = in_array($sheme, self::REQUEST_SCHEME, true) ? $sheme : '';
+		if('//' === $sheme || in_array($sheme, self::REQUEST_SCHEME, true)) {
+			$this->REQUEST_SCHEME = $sheme;
+		}
 		return $this;
 	}
 
