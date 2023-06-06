@@ -37,13 +37,16 @@ class Router
 	private string $QUERY_STRING;
 	private string $BASE_URL;
 
+	/** @var Parser */
+	private Parser $parser;
+
 	/** @var Route[][]  */
 	private array $multiton = [
 		'find' => []
 	];
 
-	/** @var array From Parser */
-	private array $routes;
+	/** @var array|null From Parser */
+	private ? array $routes = null;
 
 	/** @var array Overload params for switch url lang */
 	private array $overloadedRouteParams = [];
@@ -143,13 +146,28 @@ class Router
 		# Init ajax detection from input server
 		$this->initAjaxDetection();
 
-		# Bind user routes
+		# Bind parser
+		$this->parser = $parser;
+	}
+
+	/**
+	 * Load routes
+	 *
+	 * @param bool $reload [optional]
+	 * @return $this
+	 */
+	public function load(bool $reload = false): Router
+	{
 		try {
-			$this->routes = $parser->get();
+			if(null === $this->routes || $reload) {
+				$this->routes = $this->parser->get();
+			}
 		}
 		catch (Exception $e) {
+			$this->routes = [];
 			$this->addException($e);
 		}
+		return $this;
 	}
 
 	/**
@@ -159,6 +177,9 @@ class Router
 	 */
 	public function run(): Router
 	{
+		# Bind routes
+		$this->load();
+
 		# Start route processing
 		$route = $this->find($this->REQUEST_URI);
 		if($route->getId()) {
@@ -166,6 +187,16 @@ class Router
 			$this->current->setQueryParams(Parser::queryParams($this->QUERY_STRING));
 		}
 		return $this;
+	}
+
+	/**
+	 * Expose Parser
+	 *
+	 * @return Parser
+	 */
+	public function parser(): Parser
+	{
+		return $this->parser;
 	}
 
 	/**
@@ -296,6 +327,7 @@ class Router
 	 */
 	public function export(): array
 	{
+		$this->load();
 		return $this->routes;
 	}
 
