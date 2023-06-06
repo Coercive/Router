@@ -257,6 +257,20 @@ class Parser
     }
 
     /**
+     * ADD ROUTE
+     *
+     * @param string $id
+     * @param array $data
+     * @return Parser
+     */
+    public function addRoute(string $id, array $data): Parser
+	{
+        return $this->addRoutes([
+			$id => $data
+		]);
+    }
+
+    /**
      * Start process : launch of routes detection
      *
      * @return array
