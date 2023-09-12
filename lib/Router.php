@@ -239,10 +239,14 @@ class Router
 	/**
 	 * THE CURRENT HOST
 	 *
+	 * @param bool $port [optional]
 	 * @return string
 	 */
-	public function getHost(): string
+	public function getHost(bool $port = false): string
 	{
+		if(!$port && strpos($this->HTTP_HOST, ':')) {
+			return (string) strstr($this->HTTP_HOST, ':', true);
+		}
 		return $this->HTTP_HOST;
 	}
 
