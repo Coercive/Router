@@ -483,4 +483,29 @@ class Route
 	{
 		return $this->route['options'][$name] ?? null;
 	}
+
+	/**
+	 * Route setter : options
+	 *
+	 * @param array $options
+	 * @return $this
+	 */
+	public function setOptions(array $options): self
+	{
+		$this->route['options'] = $options;
+		return $this;
+	}
+
+	/**
+	 * Route setter : one option by name
+	 *
+	 * @param string $name
+	 * @param mixed $data
+	 * @return mixed
+	 */
+	public function setOption(string $name, $data): self
+	{
+		$this->route['options'][$name] = $data;
+		return $this;
+	}
 }
