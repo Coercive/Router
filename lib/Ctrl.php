@@ -1,9 +1,9 @@
 <?php
 namespace Coercive\Utility\Router;
 
+use Closure;
 use Exception;
 use ReflectionMethod;
-use ReflectionException;
 
 /**
  * Ctrl
@@ -12,29 +12,75 @@ use ReflectionException;
  * @link https://github.com/Coercive/Router
  *
  * @author Anthony Moral <contact@coercive.fr>
- * @copyright 2020
+ * @copyright 2024
  * @license MIT
  */
 class Ctrl
 {
 	/** @var string */
-	private $defaultController = '';
+	private string $defaultControllerNotCallable = '';
+
+	/** @var string */
+	private string $defaultControllerNotFound = '';
+
+	/** @var Closure|null */
+	private ? Closure $hookNotCallable = null;
+
+	/** @var Closure|null */
+	private ? Closure $hookNotFound = null;
 
 	/** @var array */
-	private $allowedNamespaces = [];
+	private array $allowedNamespaces = [];
 
 	/** @var mixed */
 	private $app = null;
 
 	/**
-	 * SET DEFAULT CONTROLLER (ERROR 500)
+	 * LOAD DEFAULT CONTROLLER AND HOOK
 	 *
-	 * @param string $default
+	 * @param string $controller
+	 * @param int $code
+	 * @param string $message
+	 * @return void
+	 */
+	private function hook(string $controller, int $code, string $message)
+	{
+		$hook = $code === 404 ? $this->hookNotFound : $this->hookNotCallable;
+		$ctrl = $code === 404 ? $this->defaultControllerNotFound : $this->defaultControllerNotCallable;
+
+		if($hook) {
+			($hook)(new Exception($message, $code));
+		}
+		if($ctrl && $controller !== $ctrl) {
+			$this->load($ctrl);
+		}
+	}
+
+	/**
+	 * SET DEFAULT CONTROLLER CRASH (ERROR 500)
+	 *
+	 * @param string $controller
+	 * @param Closure|null $hook [optional]
 	 * @return Ctrl
 	 */
-	public function setDefault(string $default): Ctrl
+	public function setFallbackNotCallable(string $controller, ? Closure $hook = null): self
 	{
-		$this->defaultController = $default;
+		$this->defaultControllerNotCallable = $controller;
+		$this->hookNotCallable = $hook;
+		return $this;
+	}
+
+	/**
+	 * SET DEFAULT CONTROLLER NOT FOUND (ERROR 404)
+	 *
+	 * @param string $controller
+	 * @param Closure|null $hook [optional]
+	 * @return Ctrl
+	 */
+	public function setFallbackNotFound(string $controller, ? Closure $hook = null): self
+	{
+		$this->defaultControllerNotFound = $controller;
+		$this->hookNotFound = $hook;
 		return $this;
 	}
 
@@ -46,7 +92,7 @@ class Ctrl
 	 * @param string $namespace
 	 * @return Ctrl
 	 */
-	public function setAllowedNamespace(string $namespace): Ctrl
+	public function setAllowedNamespace(string $namespace): self
 	{
 		if($namespace) {
 			$this->allowedNamespaces[sha1($namespace)] = $namespace;
@@ -62,11 +108,10 @@ class Ctrl
 	 * @param string[] $namespaces
 	 * @return Ctrl
 	 */
-	public function setAllowedNamespaces(array $namespaces): Ctrl
+	public function setAllowedNamespaces(array $namespaces): self
 	{
 		foreach ($namespaces as $namespace) {
-			if(!$namespace || !is_string($namespace)) { continue; }
-			$this->allowedNamespaces[sha1($namespace)] = $namespace;
+			$this->setAllowedNamespace($namespace);
 		}
 		return $this;
 	}
@@ -77,7 +122,7 @@ class Ctrl
 	 * @param mixed $app
 	 * @return Ctrl
 	 */
-	public function setApp($app): Ctrl
+	public function setApp($app): self
 	{
 		$this->app = $app;
 		return $this;
@@ -87,23 +132,21 @@ class Ctrl
 	 * Ctrl loader
 	 *
 	 * @param string $class : ProjectCode\Controller::Method
-	 * @return mixed
-	 * @throws Exception
-	 * @throws ReflectionException
+	 * @return void
 	 */
 	public function load(string $class)
 	{
 		# No controller
 		if(!$class) {
-			if(!$this->defaultController) {
-				throw new Exception('CtrlException : Can\'t load default ctrl ' . $class);
-			}
-			return $this->load($this->defaultController);
+			$msg = 'CtrlException : ' . ($this->defaultControllerNotFound ? 'Controller not found' : 'Default controller not found');
+			$this->hook($class, 404, $msg);
+			return;
 		}
 
 		# Verify Path
-		if(!preg_match('`^(?P<controller>[\\\a-z0-9_]+)::(?P<method>[a-z0-9_]+)$`i', $class, $matches)) {
-			throw new Exception('CtrlException : Pattern don\'t match ' . $class);
+		if(!preg_match('`^(?P<controller>[\\\a-z\d_]+)::(?P<method>[a-z\d_]+)$`i', $class, $matches)) {
+			$this->hook($class, 500, 'CtrlException : Pattern don\'t match ' . $class);
+			return;
 		}
 
 		# Bind
@@ -113,20 +156,25 @@ class Ctrl
 		# Verify allowed
 		foreach ($this->allowedNamespaces as $namespace) {
 			if($namespace && 0 !== strpos($controller, $namespace)) {
-				throw new Exception('CtrlException : Namespace is not allowed ' . $class);
+				$this->hook($class, 500, 'CtrlException : Namespace is not allowed ' . $class);
+				return;
 			}
 		}
 
 		# Not callable : 500
 		if(!is_callable([$controller, $method])) {
-			if($class === $this->defaultController || !$this->defaultController) {
-				throw new Exception('CtrlException : Can\'t load default ctrl ' . $class);
-			}
-			return $this->load($this->defaultController);
+			$this->hook($class, 500, 'CtrlException : Controller is not callable ' . $class);
+			return;
 		}
 
 		# Detect if required App parameter
-		$reflection = new ReflectionMethod($controller, $method);
+		try {
+			$reflection = new ReflectionMethod($controller, $method);
+		}
+		catch (Exception $e) {
+			$this->hook($class, 500, 'CtrlException : ReflectionMethod crash ' . $class . ', with message : ' . $e->getMessage());
+			return;
+		}
 		$methodExpectedApp = false;
 		if($this->app && $reflection->getNumberOfParameters()) {
 			foreach ($reflection->getParameters() as $parameter) {
