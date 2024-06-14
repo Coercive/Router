@@ -554,7 +554,7 @@ class Router
 				$route->setBaseUrl($this->getBaseUrl());
 				$route->setRewriteParams($routeParamsGet);
 				$route->setQueryParams($queryParamsGet);
-				break;
+				break 2;
 			}
 		}
 
