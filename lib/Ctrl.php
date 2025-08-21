@@ -2,6 +2,8 @@
 namespace Coercive\Utility\Router;
 
 use Closure;
+use Coercive\App\Core\AbstractApp;
+use Coercive\App\Factory\AbstractFactory;
 use Exception;
 use ReflectionMethod;
 
@@ -32,8 +34,11 @@ class Ctrl
 	/** @var array */
 	private array $allowedNamespaces = [];
 
-	/** @var mixed */
-	private $app = null;
+	/** @var AbstractApp|null */
+	private ? AbstractApp $app = null;
+
+	/** @var AbstractFactory|null */
+	private ? AbstractFactory $factory = null;
 
 	/**
 	 * LOAD DEFAULT CONTROLLER AND HOOK
@@ -117,14 +122,26 @@ class Ctrl
 	}
 
 	/**
-	 * SET APP TO INJECT
+	 * Set app to inject
 	 *
-	 * @param mixed $app
+	 * @param AbstractApp $app
 	 * @return Ctrl
 	 */
-	public function setApp($app): self
+	public function setApp(AbstractApp $app): self
 	{
 		$this->app = $app;
+		return $this;
+	}
+
+	/**
+	 * Set Factory to enable binding class
+	 *
+	 * @param AbstractFactory $factory
+	 * @return Ctrl
+	 */
+	public function setFactory(AbstractFactory $factory): self
+	{
+		$this->factory = $factory;
 		return $this;
 	}
 
@@ -192,10 +209,15 @@ class Ctrl
 
 		# Call instantiate
 		else {
+			$class = null;
+			if($this->app || $this->factory) {
+				$class = $reflection->getDeclaringClass();
+			}
+
 			# Detect if constructor required App parameter
 			$constructorExpectedApp = false;
 			if($this->app) {
-				$constructor = $reflection->getDeclaringClass()->getConstructor();
+				$constructor = $class->getConstructor();
 				if ($constructor && $constructor->getNumberOfParameters()) {
 					foreach ($constructor->getParameters() as $parameter) {
 						if ($parameter->getName() === 'app') {
@@ -208,6 +230,9 @@ class Ctrl
 
 			# Load with or without app
 			$ctrl = $constructorExpectedApp ? new $controller($this->app) : new $controller();
+			if($this->factory) {
+				$this->factory->setInstance($class->getName(), $ctrl);
+			}
 			return $methodExpectedApp ? $ctrl->{$method}($this->app) : $ctrl->{$method}();
 		}
 	}
