@@ -11,24 +11,26 @@
     "authors": [
         {
             "name": "Anthony Moral",
-            "email": "contact@coercive.fr",
-            "homepage": "http://coercive.fr"
+            "email": "contact@coercive.fr"
         }
     ],
+    "require-dev": {
+      "phpunit/phpunit": "^12"
+    },
     "require": {
         "php": ">=7.4",
         "symfony/yaml": "^2",
         "coercive/xss": "^0.0.7",
         "coercive/globals": "^1"
     },
-    "require-dev": {},
     "autoload": {
-        "psr-4": { "Coercive\\Utility\\Router\\": "lib/" }
-    },
-    "minimum-stability" : "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0-dev"
+        "psr-4": {
+          "Coercive\\Utility\\Router\\": "lib/"
         }
+    },
+    "autoload-dev": {
+        "classmap": [
+            "tests/"
+        ]
     }
 }

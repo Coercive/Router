@@ -1,0 +1,39 @@
+# //////////////////////////////////////////////////////////////////////////////////////////////////
+# BASIC TESTS
+
+TEST_ROOT:
+    __: ControllerTest::Root
+    FR: /fr/accueil
+    EN: /en/home
+
+TEST_CUSTOM_OPTIONS:
+    __: ControllerTest::CustomOption
+    FR: /fr/option-personnalisees
+    EN: /en/custom-options
+    options:
+        test_option_1: false
+        test_option_2: true
+        test_option_3: 1234
+        test_option_4: bonjour
+
+# BASIC TESTS
+# //////////////////////////////////////////////////////////////////////////////////////////////////
+# ADVANCED TESTS
+
+TEST_REQUIRED_ARGS:
+    __: ControllerTest::Arguments
+    FR: /fr/test-arguments/{required1}/{required2:\d+}
+    EN: /en/test-arguments/{required1}/{required2:\d+}
+
+TEST_OPTIONAL_ARGS:
+    __: ControllerTest::Arguments
+    FR: /fr/test-arguments-optionel[/optional-{optional:\d+}]
+    EN: /en/test-optional-arguments[/optional-{optional:\d+}]
+
+TEST_REQUIRED_AND_OPTIONAL_ARGS:
+    __: ControllerTest::Arguments
+    FR: /fr/test-arguments-optionels-et-obligatoires/{required1}/{required2:\d+}[/{optional1}][/{optional2:\d+}]
+    EN: /en/test-optional-and-required-arguments/{required1}/{required2:\d+}[/{optional1}][/{optional2:\d+}]
+
+# ADVANCED TESTS
+# //////////////////////////////////////////////////////////////////////////////////////////////////
