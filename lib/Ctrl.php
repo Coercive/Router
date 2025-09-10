@@ -149,7 +149,7 @@ class Ctrl
 	 * Ctrl loader
 	 *
 	 * @param string $class : ProjectCode\Controller::Method
-	 * @return void
+	 * @return mixed|void
 	 */
 	public function load(string $class)
 	{
