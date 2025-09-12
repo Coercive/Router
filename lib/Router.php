@@ -22,7 +22,22 @@ use Coercive\Utility\Router\Entity\Route;
  */
 class Router
 {
-	const REQUEST_SCHEME = [
+	const array SERVER_FIXTURES = [
+		'SCRIPT_URL' => '/',
+		'SCRIPT_URI' => 'https://test.website.com/',
+		'HTTPS' => 'on',
+		'HTTP_HOST' => '123.45.67.89',
+		'SERVER_NAME' => 'test.website.com',
+		'DOCUMENT_ROOT' => '/server/root/path',
+		'REQUEST_SCHEME' => 'https',
+		'REQUEST_METHOD' => 'GET',
+		'QUERY_STRING' => '',
+		'REQUEST_URI' => '/',
+		'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest',
+		'HTTP_ACCEPT' => 'html',
+	];
+
+	const array REQUEST_SCHEME = [
 		'http', 'https', 'ftp'
 	];
 
@@ -72,20 +87,20 @@ class Router
 	 *
 	 * @return void
 	 */
-	private function initInputServer()
+	private function initInputServer(): void
 	{
 		# INPUT_SERVER
 		$this->REQUEST_SCHEME = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
 		$this->DOCUMENT_ROOT = (string) filter_input(INPUT_SERVER, 'DOCUMENT_ROOT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 		$this->HTTP_HOST = (string) filter_input(INPUT_SERVER, 'HTTP_HOST', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-		$this->REQUEST_METHOD = strtoupper(filter_input(INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+		$this->REQUEST_METHOD = strtoupper(filter_input(INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '');
 		$this->SERVER_NAME = (string) filter_input(INPUT_SERVER, 'SERVER_NAME', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 		# INPUT SERVER REQUEST
-		$this->REQUEST_URI = trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL)), '/');
-		$this->SCRIPT_URI = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URI', FILTER_SANITIZE_URL)), '/');
-		$this->SCRIPT_URL = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URL', FILTER_SANITIZE_URL)), '/');
-		$this->QUERY_STRING = urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL));
+		$this->REQUEST_URI = trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL) ?: ''), '/');
+		$this->SCRIPT_URI = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URI', FILTER_SANITIZE_URL) ?: ''), '/');
+		$this->SCRIPT_URL = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URL', FILTER_SANITIZE_URL) ?: ''), '/');
+		$this->QUERY_STRING = urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL) ?: '');
 		$this->setBaseUrl();
 	}
 
@@ -94,7 +109,7 @@ class Router
 	 *
 	 * @return void
 	 */
-	private function initAjaxDetection()
+	private function initAjaxDetection(): void
 	{
 		# The request is ajax
 		$this->ajax = 'XMLHttpRequest' === filter_input(INPUT_SERVER, 'HTTP_X_REQUESTED_WITH', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -119,15 +134,14 @@ class Router
 	 * Add Exception for external debug handler
 	 *
 	 * @param Exception $e
-	 * @return $this
+	 * @return void
 	 */
-	private function addException(Exception $e): Router
+	private function addException(Exception $e): void
 	{
 		$this->exceptions[] = $e;
 		if(null !== $this->debug) {
 			($this->debug)($e);
 		}
-		return $this;
 	}
 
 	/**
@@ -150,6 +164,56 @@ class Router
 
 		# Bind parser
 		$this->parser = $parser;
+	}
+
+	/**
+	 * Inject fixtures to start Router in command line, or try some tests
+	 *
+	 * @param array $data [optional]
+	 * @return $this
+	 */
+	public function fixtures(array$data = self::SERVER_FIXTURES): self
+	{
+		# INPUT_SERVER
+		if($str = $data['REQUEST_SCHEME'] ?? '') {
+			$this->REQUEST_SCHEME = $str;
+		}
+		if($str = $data['DOCUMENT_ROOT'] ?? '') {
+			$this->DOCUMENT_ROOT = $str;
+		}
+		if($str = $data['HTTP_HOST'] ?? '') {
+			$this->HTTP_HOST = $str;
+		}
+		if($str = $data['REQUEST_METHOD'] ?? '') {
+			$this->REQUEST_METHOD = $str;
+		}
+		if($str = $data['SERVER_NAME'] ?? '') {
+			$this->SERVER_NAME = $str;
+		}
+
+		# INPUT SERVER REQUEST
+		if($str = $data['REQUEST_URI'] ?? '') {
+			$this->REQUEST_URI = $str;
+		}
+		if($str = $data['SCRIPT_URI'] ?? '') {
+			$this->SCRIPT_URI = $str;
+		}
+		if($str = $data['SCRIPT_URL'] ?? '') {
+			$this->SCRIPT_URL = $str;
+		}
+		if($str = $data['QUERY_STRING'] ?? '') {
+			$this->QUERY_STRING = $str;
+		}
+		if($str = $data['HTTP_X_REQUESTED_WITH'] ?? '') {
+			$this->ajax = 'XMLHttpRequest' === $str;
+		}
+		if($str = $data['HTTP_ACCEPT'] ?? '') {
+			$this->httpAccept = $str;
+		}
+
+		$this->setBaseUrl();
+
+		return $this;
 	}
 
 	/**
@@ -212,7 +276,7 @@ class Router
 	 * @param Closure|null $function
 	 * @return $this
 	 */
-	public function debug(Closure $function = null): Router
+	public function debug(? Closure $function = null): Router
 	{
 		$this->debug = $function;
 		return $this;
@@ -375,7 +439,7 @@ class Router
 	 */
 	public function getRawCurrentURL(bool $full = false): string
 	{
-		$uri = '/' . $this->REQUEST_URI;
+		$uri = '/' . ltrim($this->REQUEST_URI, '/');
 		return $full ? $this->getBaseUrl() . $uri : $uri;
 	}
 

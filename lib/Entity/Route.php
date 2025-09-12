@@ -171,7 +171,7 @@ class Route
 	 * @param Closure|null $function
 	 * @return $this
 	 */
-	public function debug(Closure $function = null): Route
+	public function debug(? Closure $function = null): Route
 	{
 		$this->debug = $function;
 		return $this;

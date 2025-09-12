@@ -20,6 +20,82 @@ final class RouterTest extends TestCase
 		Loader::loadByYaml(['/path/does/not/exist.yaml']);
 	}
 
+	public function testServerFixtures(): void
+	{
+		$router = Loader::loadByArray([
+			'TEST_FIXTURES' => [
+				'__' => 'ControllerTest::Fixtures',
+				'FR' => '/',
+				'EN' => '/',
+			]
+		], '');
+
+		$router->fixtures();
+
+		# TEST RUNNING
+		$router->run();
+		if($exceptions = $router->getExceptions()) {
+			foreach ($exceptions as $e) {
+				throw $e;
+			}
+		}
+
+		# TEST LOADING CURRENT ROUTE
+		$this->assertSame('TEST_FIXTURES', $router->current()->getId());
+
+		# TEST BASIC FIXTURES
+		$this->assertSame('//123.45.67.89', $router->buildBaseUrl(true));
+		$this->assertSame('ftp://123.45.67.89', $router->buildBaseUrl(false, 'ftp'));
+
+		$this->assertSame('https://123.45.67.89', $router->buildBaseUrl());
+		$this->assertSame('https://123.45.67.89', $router->getBaseUrl());
+
+		$this->assertSame('123.45.67.89', $router->getHost());
+		$this->assertSame('/server/root/path', $router->getServerRootPath());
+		$this->assertSame('GET', $router->getMethod());
+		$this->assertSame('https', $router->getProtocol());
+		$this->assertSame('/', $router->getRawCurrentURL());
+		$this->assertSame('/', $router->getCurrentURL());
+		$this->assertSame('https://123.45.67.89/', $router->getCurrentURL(true));
+		$this->assertSame('html', $router->getHttpAccept());
+		$this->assertSame('https://test.website.com/', $router->getScriptUri());
+		$this->assertSame('/', $router->getScriptUrl());
+		$this->assertSame('test.website.com', $router->getServerName());
+		$this->assertSame(true, $router->isAjaxRequest());
+
+		# ADVANCED FIXTURES
+		$router->fixtures([
+			'HTTP_HOST' => '123.45.67.89:123',
+		]);
+		$this->assertSame('123.45.67.89', $router->getHost());
+
+		$router->setAjaxRequest(false);
+		$this->assertSame(false, $router->isAjaxRequest());
+
+		$router->setBaseUrl('https://hello.world.test');
+		$this->assertSame('https://hello.world.test/', $router->getCurrentURL(true));
+		$router->setBaseUrl();
+		$this->assertSame('https://123.45.67.89/', $router->getCurrentURL(true));
+
+		$router->setHost('1.2.3.4');
+		$this->assertSame('1.2.3.4', $router->getHost());
+		$router->setHost('new.host.test');
+		$this->assertSame('new.host.test', $router->getHost());
+
+		$router->setProtocol('http');
+		$this->assertSame('http', $router->getProtocol());
+		$router->setProtocol('unexpected');
+		$this->assertSame('http', $router->getProtocol());
+		$router->setProtocol('ftp');
+		$this->assertSame('ftp', $router->getProtocol());
+		$router->setProtocol('https');
+		$this->assertSame('https', $router->getProtocol());
+
+		$router->current()->setRewriteParam('hello', 'world');
+		$router->overloadGET();
+		$this->assertSame('world', $_GET['hello'] ?? null);
+	}
+
 	public function testLoadRoutes(): void
 	{
 		$router = Loader::loadByYaml([__DIR__ . '/routes.yml']);
@@ -28,7 +104,13 @@ final class RouterTest extends TestCase
 			error_log(print_r($e->getMessage(), true));
 		});
 
+		# TEST LOADING
 		$router->load();
+		if($exceptions = $router->getExceptions()) {
+			foreach ($exceptions as $e) {
+				throw $e;
+			}
+		}
 
 		# TEST_ROOT
 		$route = $router->route('TEST_ROOT', 'FR');
@@ -95,6 +177,43 @@ final class RouterTest extends TestCase
 		$route->unsetRewriteParam('optional1');
 		$route->unsetRewriteParam('optional2');
 		$this->assertSame('/fr/test-arguments-optionels-et-obligatoires/hello/12345', $route->getUrl());
+	}
+
+	public function testLoadFromCache(): void
+	{
+		$router = Loader::loadByYaml([__DIR__ . '/routes.yml']);
+
+		$router->debug(function ($e) {
+			error_log(print_r($e->getMessage(), true));
+		});
+
+		# TEST LOADING
+		$router->load();
+		if($exceptions = $router->getExceptions()) {
+			foreach ($exceptions as $e) {
+				throw $e;
+			}
+		}
+
+		# Reload from export
+		$cachedData = $router->export();
+		$router = Loader::loadByCache($cachedData);
+
+		$router->debug(function ($e) {
+			error_log(print_r($e->getMessage(), true));
+		});
+
+		# TEST LOADING
+		$router->load();
+		if($exceptions = $router->getExceptions()) {
+			foreach ($exceptions as $e) {
+				throw $e;
+			}
+		}
+;
+		# TEST_ROOT (for validate reload from cache)
+		$route = $router->route('TEST_ROOT', 'FR');
+		$this->assertSame('TEST_ROOT', $route->getId());
 	}
 }
 
