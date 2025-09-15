@@ -16,16 +16,16 @@ use Exception;
 class Parser
 {
     # PROPERTIES
-    const string DEFAULT_CONTROLLER_LABEL = '__';
-    const string DEFAULT_OPTIONS_LABEL = 'options';
-    const string DEFAULT_OPTION_METHODS_LABEL = 'methods';
+    const DEFAULT_CONTROLLER_LABEL = '__';
+    const DEFAULT_OPTIONS_LABEL = 'options';
+    const DEFAULT_OPTION_METHODS_LABEL = 'methods';
 
     # REGEX
-    const string DEFAULT_MATCH_REGEX = '[^/]+';
-    const string REGEX_PARAM = '`\{([a-z_][a-z0-9_-]*)(?::([^{}]*(?:\{(?-1)}[^{}]*)*))?}`i';
-	const string REGEX_OPTION = '`\[([^\[\]]*#[0-9]+#[^\[\]]*)?]`';
-    const string REGEX_OPTION_NUMBER = '`#([0-9]+)#`';
-    const string REGEX_LOST_OPTION = '`\[[^]]*]`';
+    const DEFAULT_MATCH_REGEX = '[^/]+';
+    const REGEX_PARAM = '`\{([a-z_][a-z0-9_-]*)(?::([^{}]*(?:\{(?-1)}[^{}]*)*))?}`i';
+	const REGEX_OPTION = '`\[([^\[\]]*#[0-9]+#[^\[\]]*)?]`';
+    const REGEX_OPTION_NUMBER = '`#([0-9]+)#`';
+    const REGEX_LOST_OPTION = '`\[[^]]*]`';
 
     /** @var string */
     private string $controller = self::DEFAULT_CONTROLLER_LABEL;

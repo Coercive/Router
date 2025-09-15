@@ -22,7 +22,7 @@ use Coercive\Utility\Router\Entity\Route;
  */
 class Router
 {
-	const array SERVER_FIXTURES = [
+	const SERVER_FIXTURES = [
 		'SCRIPT_URL' => '/',
 		'SCRIPT_URI' => 'https://test.website.com/',
 		'HTTPS' => 'on',
@@ -37,7 +37,7 @@ class Router
 		'HTTP_ACCEPT' => 'html',
 	];
 
-	const array REQUEST_SCHEME = [
+	const REQUEST_SCHEME = [
 		'http', 'https', 'ftp'
 	];
 
