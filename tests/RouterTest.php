@@ -215,5 +215,40 @@ final class RouterTest extends TestCase
 		$route = $router->route('TEST_ROOT', 'FR');
 		$this->assertSame('TEST_ROOT', $route->getId());
 	}
+
+    public function testReferer(): void
+    {
+        $router = Loader::loadByYaml([__DIR__ . '/routes.yml']);
+        $router->load();
+
+        $router->fixtures();
+        $router->fixtures([
+            'HTTP_HOST' => 'test.website.com'
+        ]);
+
+        $this->assertSame('https://test.website.com', $router->getBaseUrl());
+        $this->assertSame('https://test.website.com', $router->getHttpReferer());
+        $this->assertSame('https://test.website.com', $router->getRawHttpReferer());
+        $this->assertTrue($router->isSelfHttpReferer());
+        $this->assertTrue($router->isSelfHttpReferer(true));
+
+        $router->fixtures([
+            'HTTP_REFERER' => 'https://test.website.com/fr/test-arguments/hello/1234'
+        ]);
+        $this->assertTrue($router->isSelfHttpReferer());
+        $this->assertTrue($router->isSelfHttpReferer(true));
+
+        $router->fixtures([
+            'HTTP_REFERER' => 'https://test.fake.com/fr/test-arguments/hello/1234'
+        ]);
+        $this->assertFalse($router->isSelfHttpReferer());
+        $this->assertFalse($router->isSelfHttpReferer(true));
+
+        $router->fixtures([
+            'HTTP_REFERER' => 'https://test.website.com/fr/test-arguments/hello/bad-argument'
+        ]);
+        $this->assertTrue($router->isSelfHttpReferer());
+        $this->assertFalse($router->isSelfHttpReferer(true));
+    }
 }
 

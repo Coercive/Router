@@ -1,6 +1,11 @@
 # //////////////////////////////////////////////////////////////////////////////////////////////////
 # BASIC TESTS
 
+TEST_EMPTY:
+    __: ControllerTest::Home
+    FR: /
+    EN: /
+
 TEST_ROOT:
     __: ControllerTest::Root
     FR: /fr/accueil

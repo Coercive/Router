@@ -25,6 +25,7 @@ class Router
 	const SERVER_FIXTURES = [
 		'SCRIPT_URL' => '/',
 		'SCRIPT_URI' => 'https://test.website.com/',
+		'HTTP_REFERER' => 'https://test.website.com',
 		'HTTPS' => 'on',
 		'HTTP_HOST' => '123.45.67.89',
 		'SERVER_NAME' => 'test.website.com',
@@ -52,6 +53,7 @@ class Router
 	private string $SCRIPT_URL;
 	private string $QUERY_STRING;
 	private string $BASE_URL;
+	private string $HTTP_REFERER;
 
 	/** @var Parser */
 	private Parser $parser;
@@ -101,7 +103,8 @@ class Router
 		$this->SCRIPT_URI = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URI', FILTER_SANITIZE_URL) ?: ''), '/');
 		$this->SCRIPT_URL = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URL', FILTER_SANITIZE_URL) ?: ''), '/');
 		$this->QUERY_STRING = urldecode(filter_input(INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_URL) ?: '');
-		$this->setBaseUrl();
+        $this->HTTP_REFERER = trim(urldecode(filter_input(INPUT_SERVER, 'HTTP_REFERER', FILTER_SANITIZE_URL) ?: ''), '/');
+        $this->setBaseUrl();
 	}
 
 	/**
@@ -204,6 +207,9 @@ class Router
 		if($str = $data['QUERY_STRING'] ?? '') {
 			$this->QUERY_STRING = $str;
 		}
+        if($str = $data['HTTP_REFERER'] ?? '') {
+            $this->HTTP_REFERER = $str;
+        }
 		if($str = $data['HTTP_X_REQUESTED_WITH'] ?? '') {
 			$this->ajax = 'XMLHttpRequest' === $str;
 		}
@@ -430,6 +436,46 @@ class Router
 	{
 		return $this->SCRIPT_URL;
 	}
+
+    /**
+     * SERVER HTTP REFERER
+     *
+     * @return string
+     */
+    public function getRawHttpReferer(): string
+    {
+        return $this->HTTP_REFERER;
+    }
+
+    /**
+     * SERVER HTTP REFERER
+     *
+     * @return string
+     */
+    public function getHttpReferer(): string
+    {
+        return (new XssUrl)->setUrl($this->getRawHttpReferer())->getFiltered();
+    }
+
+    /**
+     * Check if SERVER HTTP REFERER has same domain
+     *
+     * @param bool $route
+     * @return bool
+     */
+    public function isSelfHttpReferer(bool $route = false): bool
+    {
+        $rawUrl = $this->getRawHttpReferer();
+        if(false === strpos($rawUrl, $this->getBaseUrl())) {
+            return false;
+        }
+
+        if($route && !$this->find($rawUrl)->getId()) {
+            return false;
+        }
+
+        return true;
+    }
 
 	/**
 	 * GET RAW CURRENT URL
