@@ -21,7 +21,6 @@
         "php": ">=7.4",
         "symfony/yaml": "^2 || ^3 || ^4 || ^5",
         "coercive/xss": "^0",
-        "coercive/globals": "^1",
         "ext-json": "*"
     },
     "autoload": {
