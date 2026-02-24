@@ -29,6 +29,7 @@ class Router
 		'HTTPS' => 'on',
 		'HTTP_HOST' => '123.45.67.89',
 		'SERVER_NAME' => 'test.website.com',
+		'HTTP_ORIGIN' => 'https://test.website.com',
 		'DOCUMENT_ROOT' => '/server/root/path',
 		'REQUEST_SCHEME' => 'https',
 		'REQUEST_METHOD' => 'GET',
@@ -42,11 +43,20 @@ class Router
 		'http', 'https', 'ftp'
 	];
 
+    const SEC_FETCH_SITE = [
+        'cross-site',
+        'same-origin',
+        'same-site',
+        'none',
+    ];
+
 	/** @var string from INPUT_SERVER data */
 	private string $REQUEST_SCHEME;
 	private string $DOCUMENT_ROOT;
 	private string $HTTP_HOST;
 	private string $SERVER_NAME;
+	private string $HTTP_SEC_FETCH_SITE;
+	private string $HTTP_ORIGIN;
 	private string $REQUEST_METHOD;
 	private string $REQUEST_URI;
 	private string $SCRIPT_URI;
@@ -54,6 +64,7 @@ class Router
 	private string $QUERY_STRING;
 	private string $BASE_URL;
 	private string $HTTP_REFERER;
+	private bool $HTTPS;
 
 	/** @var Parser */
 	private Parser $parser;
@@ -92,13 +103,16 @@ class Router
 	private function initInputServer(): void
 	{
 		# INPUT_SERVER
-		$this->REQUEST_SCHEME = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+        $this->HTTPS = strval($_SERVER['HTTPS'] ?? '') !== 'off' || intval($_SERVER['SERVER_PORT'] ?? 0) === 443;
+        $this->REQUEST_SCHEME = $this->HTTPS ? 'https' : 'http';
 		$this->DOCUMENT_ROOT = (string) filter_input(INPUT_SERVER, 'DOCUMENT_ROOT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 		$this->HTTP_HOST = (string) filter_input(INPUT_SERVER, 'HTTP_HOST', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 		$this->REQUEST_METHOD = strtoupper(filter_input(INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '');
 		$this->SERVER_NAME = (string) filter_input(INPUT_SERVER, 'SERVER_NAME', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+		$this->HTTP_SEC_FETCH_SITE = (string) filter_input(INPUT_SERVER, 'SERVER_NAME', FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '`^' . implode('|', self::SEC_FETCH_SITE) . '$`']]);
 
 		# INPUT SERVER REQUEST
+		$this->HTTP_ORIGIN = trim(urldecode(filter_input(INPUT_SERVER, 'HTTP_ORIGIN', FILTER_SANITIZE_URL) ?: ''), '/');
 		$this->REQUEST_URI = trim(urldecode(filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_URL) ?: ''), '/');
 		$this->SCRIPT_URI = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URI', FILTER_SANITIZE_URL) ?: ''), '/');
 		$this->SCRIPT_URL = trim(urldecode(filter_input(INPUT_SERVER, 'SCRIPT_URL', FILTER_SANITIZE_URL) ?: ''), '/');
@@ -178,44 +192,56 @@ class Router
 	public function fixtures(array$data = self::SERVER_FIXTURES): self
 	{
 		# INPUT_SERVER
-		if($str = $data['REQUEST_SCHEME'] ?? '') {
-			$this->REQUEST_SCHEME = $str;
-		}
-		if($str = $data['DOCUMENT_ROOT'] ?? '') {
-			$this->DOCUMENT_ROOT = $str;
-		}
-		if($str = $data['HTTP_HOST'] ?? '') {
-			$this->HTTP_HOST = $str;
-		}
-		if($str = $data['REQUEST_METHOD'] ?? '') {
-			$this->REQUEST_METHOD = $str;
-		}
-		if($str = $data['SERVER_NAME'] ?? '') {
-			$this->SERVER_NAME = $str;
-		}
+        if(array_key_exists('HTTPS', $data)) {
+            $this->HTTPS = $data['HTTPS'] !== 'off';
+        }
+        if(array_key_exists('SERVER_PORT', $data)) {
+            $this->HTTPS = $this->HTTPS || intval($data['SERVER_PORT']) === 443;
+        }
+        if(array_key_exists('REQUEST_SCHEME', $data)) {
+            $this->REQUEST_SCHEME = $data['REQUEST_SCHEME'];
+        }
+        if(array_key_exists('DOCUMENT_ROOT', $data)) {
+            $this->DOCUMENT_ROOT = $data['DOCUMENT_ROOT'];
+        }
+        if(array_key_exists('HTTP_HOST', $data)) {
+            $this->HTTP_HOST = $data['HTTP_HOST'];
+        }
+        if(array_key_exists('REQUEST_METHOD', $data)) {
+            $this->REQUEST_METHOD = $data['REQUEST_METHOD'];
+        }
+        if(array_key_exists('SERVER_NAME', $data)) {
+            $this->SERVER_NAME = $data['SERVER_NAME'];
+        }
 
 		# INPUT SERVER REQUEST
-		if($str = $data['REQUEST_URI'] ?? '') {
-			$this->REQUEST_URI = $str;
-		}
-		if($str = $data['SCRIPT_URI'] ?? '') {
-			$this->SCRIPT_URI = $str;
-		}
-		if($str = $data['SCRIPT_URL'] ?? '') {
-			$this->SCRIPT_URL = $str;
-		}
-		if($str = $data['QUERY_STRING'] ?? '') {
-			$this->QUERY_STRING = $str;
-		}
-        if($str = $data['HTTP_REFERER'] ?? '') {
-            $this->HTTP_REFERER = $str;
+        if(array_key_exists('HTTP_SEC_FETCH_SITE', $data)) {
+            $this->HTTP_SEC_FETCH_SITE = $data['HTTP_SEC_FETCH_SITE'];
         }
-		if($str = $data['HTTP_X_REQUESTED_WITH'] ?? '') {
-			$this->ajax = 'XMLHttpRequest' === $str;
-		}
-		if($str = $data['HTTP_ACCEPT'] ?? '') {
-			$this->httpAccept = $str;
-		}
+        if(array_key_exists('HTTP_ORIGIN', $data)) {
+            $this->HTTP_ORIGIN = $data['HTTP_ORIGIN'];
+        }
+        if(array_key_exists('REQUEST_URI', $data)) {
+            $this->REQUEST_URI = $data['REQUEST_URI'];
+        }
+        if(array_key_exists('SCRIPT_URI', $data)) {
+            $this->SCRIPT_URI = $data['SCRIPT_URI'];
+        }
+        if(array_key_exists('SCRIPT_URL', $data)) {
+            $this->SCRIPT_URL = $data['SCRIPT_URL'];
+        }
+        if(array_key_exists('QUERY_STRING', $data)) {
+            $this->QUERY_STRING = $data['QUERY_STRING'];
+        }
+        if(array_key_exists('HTTP_REFERER', $data)) {
+            $this->HTTP_REFERER = $data['HTTP_REFERER'];
+        }
+        if(array_key_exists('HTTP_X_REQUESTED_WITH', $data)) {
+            $this->ajax = 'XMLHttpRequest' === $data['HTTP_X_REQUESTED_WITH'];
+        }
+        if(array_key_exists('HTTP_ACCEPT', $data)) {
+            $this->httpAccept = $data['HTTP_ACCEPT'];
+        }
 
 		$this->setBaseUrl();
 
@@ -418,6 +444,59 @@ class Router
 	}
 
 	/**
+	 * SERVER HTTP SEC FETCH SITE
+	 *
+	 * @return string
+	 */
+	public function getSecFetchSite(): string
+	{
+		return $this->HTTP_SEC_FETCH_SITE;
+	}
+
+	/**
+	 * SERVER HTTP ORIGIN
+	 *
+	 * @return string
+	 */
+	public function getOrigin(): string
+	{
+		return $this->HTTP_ORIGIN;
+	}
+
+    /**
+     * @return bool
+     */
+    public function isRequestSafe(): bool
+    {
+        if(!$this->isHttpSecure()) {
+            return false;
+        }
+
+        if($this->HTTP_SEC_FETCH_SITE) {
+            return in_array($this->HTTP_SEC_FETCH_SITE, ['same-origin', 'same-site'], true);
+        }
+
+        if($origin = $this->HTTP_ORIGIN ?: $this->HTTP_REFERER) {
+            $parsedOrigin = parse_url($origin);
+            $originHost = ($parsedOrigin['scheme'] ?? 'https') . '://' . ($parsedOrigin['host'] ?? '');
+            if (isset($parsedOrigin['port'])) {
+                $originHost .= ':' . $parsedOrigin['port'];
+            }
+            return hash_equals($this->getBaseUrl(), $originHost);
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isHttpSecure(): bool
+    {
+        return $this->HTTPS;
+    }
+
+	/**
 	 * SERVER SCRIPT URI
 	 *
 	 * @return string
@@ -466,7 +545,7 @@ class Router
     public function isSelfHttpReferer(bool $route = false): bool
     {
         $rawUrl = $this->getRawHttpReferer();
-        if(false === strpos($rawUrl, $this->getBaseUrl())) {
+        if(0 !== strpos($rawUrl, $this->getBaseUrl())) {
             return false;
         }
 

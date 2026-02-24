@@ -250,5 +250,63 @@ final class RouterTest extends TestCase
         $this->assertTrue($router->isSelfHttpReferer());
         $this->assertFalse($router->isSelfHttpReferer(true));
     }
+
+    public function testOrigin(): void
+    {
+        $router = Loader::loadByYaml([__DIR__ . '/routes.yml']);
+        $router->load();
+
+        $router->fixtures();
+        $router->fixtures([
+            'HTTP_HOST' => 'test.website.com',
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ]);
+        $this->assertFalse($router->isHttpSecure());
+
+        $router->fixtures([
+            'SERVER_PORT' => 443,
+        ]);
+        $this->assertTrue($router->isHttpSecure());
+
+        $router->fixtures([
+            'HTTPS' => 'on',
+        ]);
+        $this->assertTrue($router->isHttpSecure());
+
+        $router->fixtures([
+            'HTTPS' => 'off',
+            'SERVER_PORT' => 80,
+        ]);
+        $this->assertFalse($router->isRequestSafe());
+
+        $router->fixtures([
+            'HTTPS' => 'on',
+            'SERVER_PORT' => 443,
+        ]);
+        $this->assertTrue($router->isRequestSafe());
+
+        $router->fixtures([
+            'HTTP_SEC_FETCH_SITE' => 'none',
+        ]);
+        $this->assertFalse($router->isRequestSafe());
+
+        $router->fixtures([
+            'HTTP_SEC_FETCH_SITE' => 'same-origin',
+        ]);
+        $this->assertTrue($router->isRequestSafe());
+
+        $router->fixtures([
+            'HTTP_ORIGIN' => '', # cancel origin
+            'HTTP_SEC_FETCH_SITE' => '', # cancel fetch site
+            'HTTP_REFERER' => 'https://test.website.com/fr/test/random/something/try',
+        ]);
+        $this->assertTrue($router->isRequestSafe());
+
+        $router->fixtures([
+            'HTTP_REFERER' => 'https://bad.website.com/fr/test/random/something/try',
+        ]);
+        $this->assertFalse($router->isRequestSafe());
+    }
 }
 
